@@ -1,0 +1,121 @@
+---
+title: Tenders
+description: Query public procurement tenders from Latin American governments.
+---
+
+The Tenders module gives you programmatic access to public procurement tenders from official government marketplaces. Useful for sales prospecting, competitive intelligence, and compliance monitoring.
+
+## What it returns
+
+- Active and recent tender listings
+- Tender details: buyer organization, description, status, amounts, and dates
+- Search by keyword across tender titles and descriptions
+
+## Supported countries
+
+| Country | Source |
+|---------|--------|
+| Chile 🇨🇱 | Mercado Público (mercadopublico.cl) |
+
+## Endpoints
+
+### Get tenders by RUT
+
+Returns tenders associated with a specific organization (buyer) by their RUT.
+
+```bash
+POST /v1/tenders
+```
+
+```json
+{
+  "rut": "61.979.440-7",
+  "country": "CL"
+}
+```
+
+#### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `rut` | string | ✅ | Organization RUT |
+| `country` | string | ✅ | Country code. Currently: `CL`. |
+
+#### Response
+
+```json
+{
+  "rut": "61.979.440-7",
+  "organization": "Municipalidad de Santiago",
+  "tenders": [
+    {
+      "id": "3419-72-LE24",
+      "name": "Adquisición de equipos computacionales",
+      "status": "Publicada",
+      "amount": 15000000,
+      "currency": "CLP",
+      "published_at": "2024-11-01",
+      "closing_at": "2024-11-15",
+      "url": "https://www.mercadopublico.cl/Licitacion/Index/..."
+    }
+  ],
+  "total": 1,
+  "source": "mercadopublico",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+---
+
+### Search tenders by keyword
+
+Search active tenders by keyword across all organizations.
+
+```bash
+POST /v1/tenders/search
+```
+
+```json
+{
+  "keyword": "software desarrollo",
+  "country": "CL"
+}
+```
+
+#### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `keyword` | string | ✅ | Search term |
+| `country` | string | ✅ | Country code. Currently: `CL`. |
+
+#### Response
+
+Returns the same tender object structure as above, filtered to results matching the keyword.
+
+<Note>
+  The search endpoint currently returns up to ~9 results from Mercado Público's public API. Higher volume and pagination are on the roadmap.
+</Note>
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `404` | No tenders found for the given RUT |
+| `400` | Invalid parameters |
+| `403` | Missing API key or module not in plan |
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Tenders | $29/month | Full access, no request limits |
+
+<Columns cols={2}>
+  <Card title="Tenders API Reference" icon="terminal" href="/api-reference/tenders">
+    GET /v1/tenders reference.
+  </Card>
+  <Card title="Tenders Search Reference" icon="magnifying-glass" href="/api-reference/tenders-search">
+    GET /v1/tenders/search reference.
+  </Card>
+</Columns>

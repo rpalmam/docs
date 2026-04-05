@@ -1,0 +1,89 @@
+---
+title: KYB Verification
+description: Verify Latin American companies against official government registries.
+---
+
+The KYB module lets you verify any company's legal status, tax registration, and firmographic data directly from official government sources — no scraping, no stale data.
+
+## What it returns
+
+For a given tax ID (RUT in Chile), the API returns:
+
+- Legal company name (`razon_social`)
+- Active status (`activo`) — whether the company is registered and in good standing
+- Start of activities date
+- Primary economic activity description
+- Registered address
+
+## Supported countries
+
+| Country | Identifier | Source |
+|---------|-----------|--------|
+| Chile 🇨🇱 | RUT (e.g. `76354771-K`) | SII (Servicio de Impuestos Internos) |
+
+## Request
+
+```bash
+POST /v1/kyb
+```
+
+```json
+{
+  "identifier": "76354771-K",
+  "country": "CL"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | ✅ | Company tax ID. For Chile: RUT with or without dash. |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Currently: `CL`. |
+
+## Response
+
+```json
+{
+  "rut": "76354771-K",
+  "razon_social": "EMPRESA EJEMPLO SpA",
+  "activo": true,
+  "inicio_actividades": "2018-03-15",
+  "actividad_economica": "Actividades de consultoría de gestión empresarial",
+  "direccion": "Av. Providencia 1234, Providencia, Región Metropolitana",
+  "source": "sii",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rut` | string | Normalized RUT with verification digit |
+| `razon_social` | string | Official legal company name |
+| `activo` | boolean | `true` if the company has active tax registration |
+| `inicio_actividades` | string | ISO date of first tax activity |
+| `actividad_economica` | string | Primary economic activity per tax registry |
+| `direccion` | string | Registered address |
+| `source` | string | Data source (`sii` for Chile) |
+| `timestamp` | string | ISO 8601 timestamp of the response |
+
+## Error responses
+
+| Status | Code | Description |
+|--------|------|-------------|
+| `404` | — | Company not found in registry |
+| `400` | — | Invalid or malformed identifier |
+| `403` | — | Missing API key or module not included in plan |
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| KYB | $29/month | 500 verifications |
+| Overage | — | $0.08 per extra verification |
+
+<Card title="API Reference" icon="terminal" href="/api-reference/kyb">
+  Full request/response schema with interactive examples.
+</Card>

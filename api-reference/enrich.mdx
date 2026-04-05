@@ -1,0 +1,123 @@
+---
+title: "POST /v1/enrich"
+description: "Get structured firmographic data for a Latin American company."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `enrich` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="identifier" type="string" required>
+  Company tax identifier. For Chile: RUT (e.g. `76354771-K`).
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  ISO 3166-1 alpha-2 country code. Supported: `CL`.
+</ParamField>
+
+## Response
+
+<ResponseField name="rut" type="string">
+  Normalized RUT with verification digit.
+</ResponseField>
+
+<ResponseField name="razon_social" type="string">
+  Official legal company name.
+</ResponseField>
+
+<ResponseField name="activo" type="boolean">
+  `true` if the company has active tax registration.
+</ResponseField>
+
+<ResponseField name="inicio_actividades" type="string">
+  ISO 8601 date of first tax activity registration.
+</ResponseField>
+
+<ResponseField name="actividad_economica" type="string">
+  Primary economic activity description.
+</ResponseField>
+
+<ResponseField name="tipo_empresa" type="string">
+  Legal entity type (SpA, SA, LTDA, etc.).
+</ResponseField>
+
+<ResponseField name="representante_legal" type="string">
+  Name of the legal representative.
+</ResponseField>
+
+<ResponseField name="direccion" type="string">
+  Full registered address.
+</ResponseField>
+
+<ResponseField name="region" type="string">
+  Administrative region.
+</ResponseField>
+
+<ResponseField name="comuna" type="string">
+  Municipality.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Data source identifier.
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 timestamp of the response.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/enrich \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "76354771-K", "country": "CL"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/enrich",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"identifier": "76354771-K", "country": "CL"},
+)
+print(r.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "rut": "76354771-K",
+  "razon_social": "EMPRESA EJEMPLO SpA",
+  "activo": true,
+  "inicio_actividades": "2018-03-15",
+  "actividad_economica": "Actividades de consultoría de gestión empresarial",
+  "tipo_empresa": "SOCIEDAD POR ACCIONES",
+  "representante_legal": "Juan Pérez González",
+  "direccion": "Av. Providencia 1234, Providencia, Región Metropolitana",
+  "region": "Región Metropolitana",
+  "comuna": "Providencia",
+  "source": "baseapi",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+```json 404
+{
+  "detail": "Company not found"
+}
+```
+
+```json 403
+{
+  "detail": "Your plan does not include the 'enrich' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

@@ -1,0 +1,47 @@
+---
+title: Authentication
+description: How API keys and module access work.
+---
+
+## API Keys
+
+Every request to the EnrichLATAM API must include your API key in the `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" https://api.enrichlatam.com/v1/kyb ...
+```
+
+API keys are **module-scoped** — each key grants access only to the modules included in your plan.
+
+## Module access
+
+EnrichLATAM is modular. Your API key includes only the modules you've purchased:
+
+| Module | Endpoint prefix |
+|--------|----------------|
+| KYB Verification | `/v1/kyb` |
+| Company Enrichment | `/v1/enrich` |
+| Tenders | `/v1/tenders` |
+
+If you call an endpoint your key doesn't have access to, you'll get:
+
+```json
+{
+  "detail": "Your plan does not include the 'kyb' module. Upgrade at enrichlatam.com."
+}
+```
+
+## Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `403` | Missing, invalid, or inactive API key |
+| `403` | Key valid but module not included in plan |
+
+<Note>
+  API keys are hashed (SHA-256) before storage. We never store the raw key — if you lose it, you'll need to contact support to generate a new one.
+</Note>
+
+## Getting a key
+
+Purchase any module at [enrichlatam.com](https://enrichlatam.com). Your API key is sent to your email immediately after checkout — no manual provisioning, no waiting.

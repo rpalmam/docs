@@ -1,0 +1,116 @@
+---
+title: "POST /v1/tenders/search"
+description: "Search active public tenders by keyword."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `tenders` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="keyword" type="string" required>
+  Search term to match against tender titles and descriptions (e.g. `"software desarrollo"`).
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  ISO 3166-1 alpha-2 country code. Supported: `CL`.
+</ParamField>
+
+## Response
+
+<ResponseField name="keyword" type="string">
+  The search term used.
+</ResponseField>
+
+<ResponseField name="tenders" type="array">
+  List of matching tender objects (same structure as `/v1/tenders`).
+
+  <Expandable title="Tender object fields">
+    <ResponseField name="id" type="string">Tender ID.</ResponseField>
+    <ResponseField name="name" type="string">Tender title.</ResponseField>
+    <ResponseField name="organization" type="string">Buying organization name.</ResponseField>
+    <ResponseField name="status" type="string">Current tender status.</ResponseField>
+    <ResponseField name="amount" type="number">Estimated amount.</ResponseField>
+    <ResponseField name="currency" type="string">Currency code.</ResponseField>
+    <ResponseField name="published_at" type="string">Publication date.</ResponseField>
+    <ResponseField name="closing_at" type="string">Closing deadline.</ResponseField>
+    <ResponseField name="url" type="string">Official tender URL.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  Number of results returned.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Data source.
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 response timestamp.
+</ResponseField>
+
+<Note>
+  Currently returns up to ~9 results from Mercado Público's public search API. Higher volume and pagination are on the roadmap.
+</Note>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/tenders/search \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "software desarrollo", "country": "CL"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/tenders/search",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"keyword": "software desarrollo", "country": "CL"},
+)
+print(r.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "keyword": "software desarrollo",
+  "tenders": [
+    {
+      "id": "2312-45-LP24",
+      "name": "Desarrollo de software de gestión municipal",
+      "organization": "Municipalidad de Temuco",
+      "status": "Publicada",
+      "amount": 45000000,
+      "currency": "CLP",
+      "published_at": "2024-11-10",
+      "closing_at": "2024-12-05",
+      "url": "https://www.mercadopublico.cl/Licitacion/Index/2312-45-LP24"
+    }
+  ],
+  "total": 1,
+  "source": "mercadopublico",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+```json 404
+{
+  "detail": "No tenders found for keyword"
+}
+```
+
+```json 403
+{
+  "detail": "Your plan does not include the 'tenders' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

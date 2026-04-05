@@ -1,0 +1,103 @@
+---
+title: "POST /v1/kyb"
+description: "Verify a company's legal registration status."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `kyb` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="identifier" type="string" required>
+  Company tax identifier. For Chile: RUT (e.g. `76354771-K` or `763547710`).
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  ISO 3166-1 alpha-2 country code. Supported: `CL`.
+</ParamField>
+
+## Response
+
+<ResponseField name="rut" type="string">
+  Normalized RUT with verification digit.
+</ResponseField>
+
+<ResponseField name="razon_social" type="string">
+  Official legal company name from the tax registry.
+</ResponseField>
+
+<ResponseField name="activo" type="boolean">
+  `true` if the company has active tax registration.
+</ResponseField>
+
+<ResponseField name="inicio_actividades" type="string">
+  ISO 8601 date when the company first registered for tax activities.
+</ResponseField>
+
+<ResponseField name="actividad_economica" type="string">
+  Primary economic activity description per the tax registry.
+</ResponseField>
+
+<ResponseField name="direccion" type="string">
+  Registered address.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Data source identifier. `sii` for Chile.
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 timestamp of the API response.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/kyb \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "76354771-K", "country": "CL"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/kyb",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"identifier": "76354771-K", "country": "CL"},
+)
+print(r.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "rut": "76354771-K",
+  "razon_social": "EMPRESA EJEMPLO SpA",
+  "activo": true,
+  "inicio_actividades": "2018-03-15",
+  "actividad_economica": "Actividades de consultoría de gestión empresarial",
+  "direccion": "Av. Providencia 1234, Providencia, Región Metropolitana",
+  "source": "sii",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+```json 404
+{
+  "detail": "Company not found"
+}
+```
+
+```json 403
+{
+  "detail": "Your plan does not include the 'kyb' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

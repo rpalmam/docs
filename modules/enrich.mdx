@@ -1,0 +1,95 @@
+---
+title: Company Enrichment
+description: Get structured firmographic data for Latin American companies.
+---
+
+The Enrich module returns structured company data beyond the basics — legal details, contact information, and firmographic fields useful for sales, compliance, and onboarding workflows.
+
+## What it returns
+
+- All KYB fields (legal name, active status, address, economic activity)
+- Legal representative name
+- Company type / legal entity form
+- Capital information (where available)
+- Contact data (email, phone, website) when available
+
+## Supported countries
+
+| Country | Identifier | Source |
+|---------|-----------|--------|
+| Chile 🇨🇱 | RUT (e.g. `76354771-K`) | SII + BaseAPI.cl |
+
+## Request
+
+```bash
+POST /v1/enrich
+```
+
+```json
+{
+  "identifier": "76354771-K",
+  "country": "CL"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | ✅ | Company tax ID. For Chile: RUT with or without dash. |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Currently: `CL`. |
+
+## Response
+
+```json
+{
+  "rut": "76354771-K",
+  "razon_social": "EMPRESA EJEMPLO SpA",
+  "activo": true,
+  "inicio_actividades": "2018-03-15",
+  "actividad_economica": "Actividades de consultoría de gestión empresarial",
+  "tipo_empresa": "SOCIEDAD POR ACCIONES",
+  "representante_legal": "Juan Pérez González",
+  "direccion": "Av. Providencia 1234, Providencia, Región Metropolitana",
+  "region": "Región Metropolitana",
+  "comuna": "Providencia",
+  "source": "baseapi",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rut` | string | Normalized RUT |
+| `razon_social` | string | Official legal company name |
+| `activo` | boolean | Active tax registration status |
+| `inicio_actividades` | string | ISO date of first tax activity |
+| `actividad_economica` | string | Primary economic activity |
+| `tipo_empresa` | string | Legal entity type (SpA, SA, LTDA, etc.) |
+| `representante_legal` | string | Name of legal representative |
+| `direccion` | string | Full registered address |
+| `region` | string | Administrative region |
+| `comuna` | string | Municipality |
+| `source` | string | Data source |
+| `timestamp` | string | ISO 8601 response timestamp |
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `404` | Company not found |
+| `400` | Invalid identifier format |
+| `403` | Missing API key or module not in plan |
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Enrich | $49/month | 500 lookups |
+| Overage | — | $0.12 per extra lookup |
+
+<Card title="API Reference" icon="terminal" href="/api-reference/enrich">
+  Full request/response schema with interactive examples.
+</Card>

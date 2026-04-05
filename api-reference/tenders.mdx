@@ -1,0 +1,131 @@
+---
+title: "POST /v1/tenders"
+description: "Get public tenders for a specific organization by RUT."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `tenders` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="rut" type="string" required>
+  Organization RUT (e.g. `61.979.440-7`).
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  ISO 3166-1 alpha-2 country code. Supported: `CL`.
+</ParamField>
+
+## Response
+
+<ResponseField name="rut" type="string">
+  The queried organization RUT.
+</ResponseField>
+
+<ResponseField name="organization" type="string">
+  Organization name.
+</ResponseField>
+
+<ResponseField name="tenders" type="array">
+  List of tender objects.
+
+  <Expandable title="Tender object fields">
+    <ResponseField name="id" type="string">
+      Tender ID from Mercado Público.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Tender title/description.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Current tender status (e.g. `Publicada`, `Adjudicada`, `Desierta`).
+    </ResponseField>
+    <ResponseField name="amount" type="number">
+      Estimated amount in local currency.
+    </ResponseField>
+    <ResponseField name="currency" type="string">
+      Currency code (e.g. `CLP`).
+    </ResponseField>
+    <ResponseField name="published_at" type="string">
+      ISO date when the tender was published.
+    </ResponseField>
+    <ResponseField name="closing_at" type="string">
+      ISO date of tender closing deadline.
+    </ResponseField>
+    <ResponseField name="url" type="string">
+      Link to the official tender listing.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  Total number of tenders returned.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Data source (`mercadopublico` for Chile).
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 response timestamp.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/tenders \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"rut": "61.979.440-7", "country": "CL"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/tenders",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"rut": "61.979.440-7", "country": "CL"},
+)
+print(r.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "rut": "61.979.440-7",
+  "organization": "Municipalidad de Santiago",
+  "tenders": [
+    {
+      "id": "3419-72-LE24",
+      "name": "Adquisición de equipos computacionales",
+      "status": "Publicada",
+      "amount": 15000000,
+      "currency": "CLP",
+      "published_at": "2024-11-01",
+      "closing_at": "2024-11-15",
+      "url": "https://www.mercadopublico.cl/Licitacion/Index/3419-72-LE24"
+    }
+  ],
+  "total": 1,
+  "source": "mercadopublico",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+```json 404
+{
+  "detail": "No tenders found for this organization"
+}
+```
+
+```json 403
+{
+  "detail": "Your plan does not include the 'tenders' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>
