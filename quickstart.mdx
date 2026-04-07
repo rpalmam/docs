@@ -15,7 +15,7 @@ sk_a1b2c3d4e5f6...
 
 ## 2. Make your first request
 
-Use your key in the `X-API-Key` header. Here's a KYB lookup for a Chilean company by RUT:
+Use your key in the `X-API-Key` header. Here's a KYB verification for a Chilean company by RUT:
 
 <CodeGroup>
 
@@ -56,18 +56,18 @@ console.log(data);
 
 ```json
 {
-  "rut": "76354771-K",
-  "razon_social": "EMPRESA EJEMPLO SpA",
-  "activo": true,
-  "inicio_actividades": "2018-03-15",
-  "actividad_economica": "Actividades de consultoría de gestión empresarial",
-  "direccion": "Av. Providencia 1234, Providencia, Región Metropolitana",
-  "source": "sii",
-  "timestamp": "2026-04-05T10:00:00Z"
+  "identifier": "76354771-K",
+  "country": "CL",
+  "company_name": "Empresa Ejemplo Spa",
+  "status": "active",
+  "verified": true,
+  "founded_year": 2018,
+  "end_date": null,
+  "source": "sii"
 }
 ```
 
-<Check>You're live. The `activo: true` field means the company is registered and active with the tax authority.</Check>
+<Check>`verified: true` means the company is registered and active with the tax authority.</Check>
 
 ## Next steps
 
@@ -79,7 +79,7 @@ console.log(data);
     Full KYB reference with all fields and error codes.
   </Card>
   <Card title="Enrich Module" icon="building" href="/modules/enrich">
-    Company enrichment with contact, social, and firmographic data.
+    Company enrichment — pass a domain, get a full profile.
   </Card>
   <Card title="Tenders Module" icon="file-contract" href="/modules/tenders">
     Query public procurement tenders.
