@@ -1,0 +1,52 @@
+---
+title: "Email Validation"
+description: "Validate email addresses for syntax, deliverability, and B2B lead quality."
+---
+
+## Overview
+
+The `validate` module checks email addresses across four dimensions:
+
+| Check | What it does |
+|---|---|
+| **Format** | RFC 5322 syntax validation |
+| **MX records** | DNS lookup to confirm the domain accepts email |
+| **Disposable** | Detects throwaway providers (mailinator, yopmail, etc.) |
+| **Free provider** | Flags consumer inboxes (gmail, hotmail, etc.) |
+
+MX results are cached for 24 hours, so repeated lookups on the same domain are fast and free of extra DNS queries.
+
+## Use cases
+
+- **Lead capture forms** — reject invalid or disposable emails before they enter your CRM
+- **B2B qualification** — flag `free_provider: true` addresses for manual review
+- **Data cleaning** — validate existing email lists and surface typo corrections via `suggestion`
+
+## Typo correction
+
+When the domain looks like a common misspelling, the API returns a `suggestion` field with the likely intended domain:
+
+```json
+{
+  "email": "user@gmial.com",
+  "suggestion": "gmail.com"
+}
+```
+
+Use this to prompt the user to confirm or correct their email before submitting.
+
+## Response fields at a glance
+
+| Field | Type | Description |
+|---|---|---|
+| `valid` | boolean | Primary signal — format + MX both pass |
+| `format_valid` | boolean | RFC 5322 syntax check |
+| `mx_valid` | boolean | Domain has at least one MX record |
+| `disposable` | boolean | Known throwaway domain |
+| `free_provider` | boolean | Consumer inbox (gmail, hotmail, etc.) |
+| `domain` | string | Domain portion of the email |
+| `suggestion` | string \| null | Corrected domain if a typo is detected |
+
+## Pricing
+
+Email validation is included in all plans at no extra cost.

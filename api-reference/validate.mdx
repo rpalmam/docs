@@ -1,0 +1,145 @@
+---
+title: "POST /v1/validate/email"
+description: "Validate an email address: syntax, MX records, disposable domain, and free provider detection."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `validate` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="email" type="string" required>
+  The email address to validate. Whitespace is trimmed and the address is lowercased automatically.
+</ParamField>
+
+## Response
+
+<ResponseField name="email" type="string">
+  Normalized email address (lowercased, trimmed).
+</ResponseField>
+
+<ResponseField name="valid" type="boolean">
+  `true` if the email has valid syntax **and** a working MX record. Use this as the primary signal.
+</ResponseField>
+
+<ResponseField name="format_valid" type="boolean">
+  `true` if the email passes RFC 5322 syntax validation.
+</ResponseField>
+
+<ResponseField name="mx_valid" type="boolean">
+  `true` if the domain has at least one MX record. `false` if format is invalid or the domain doesn't accept email.
+</ResponseField>
+
+<ResponseField name="disposable" type="boolean">
+  `true` if the domain is a known throwaway/temporary email provider (e.g. mailinator.com, yopmail.com).
+</ResponseField>
+
+<ResponseField name="free_provider" type="boolean">
+  `true` if the domain is a consumer email provider (e.g. gmail.com, hotmail.com). Useful as a B2B lead quality signal.
+</ResponseField>
+
+<ResponseField name="domain" type="string">
+  The domain portion of the email address.
+</ResponseField>
+
+<ResponseField name="suggestion" type="string | null">
+  If the domain looks like a common typo, the corrected domain is returned here (e.g. `"gmail.com"` for `"gmial.com"`). `null` otherwise.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/validate/email \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@acme.com"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/validate/email",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"email": "john@acme.com"},
+)
+print(r.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 Valid business email
+{
+  "email": "john@acme.com",
+  "valid": true,
+  "format_valid": true,
+  "mx_valid": true,
+  "disposable": false,
+  "free_provider": false,
+  "domain": "acme.com",
+  "suggestion": null
+}
+```
+
+```json 200 Free provider
+{
+  "email": "user@gmail.com",
+  "valid": true,
+  "format_valid": true,
+  "mx_valid": true,
+  "disposable": false,
+  "free_provider": true,
+  "domain": "gmail.com",
+  "suggestion": null
+}
+```
+
+```json 200 Disposable email
+{
+  "email": "temp@mailinator.com",
+  "valid": true,
+  "format_valid": true,
+  "mx_valid": true,
+  "disposable": true,
+  "free_provider": false,
+  "domain": "mailinator.com",
+  "suggestion": null
+}
+```
+
+```json 200 Invalid format
+{
+  "email": "notanemail",
+  "valid": false,
+  "format_valid": false,
+  "mx_valid": false,
+  "disposable": false,
+  "free_provider": false,
+  "domain": "",
+  "suggestion": null
+}
+```
+
+```json 200 Typo suggestion
+{
+  "email": "user@gmial.com",
+  "valid": false,
+  "format_valid": true,
+  "mx_valid": false,
+  "disposable": false,
+  "free_provider": false,
+  "domain": "gmial.com",
+  "suggestion": "gmail.com"
+}
+```
+
+```json 403 Module not in plan
+{
+  "detail": "Your plan does not include the 'validate' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

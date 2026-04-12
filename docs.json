@@ -26,7 +26,8 @@
             "pages": [
               "modules/kyb",
               "modules/enrich",
-              "modules/tenders"
+              "modules/tenders",
+              "modules/validate"
             ]
           }
         ]
@@ -52,6 +53,12 @@
               "api-reference/tenders",
               "api-reference/tenders-search",
               "api-reference/tenders-awarded"
+            ]
+          },
+          {
+            "group": "Email Validation",
+            "pages": [
+              "api-reference/validate"
             ]
           }
         ]
