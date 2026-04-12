@@ -1,6 +1,6 @@
 ---
 title: "POST /v1/tenders"
-description: "Get public tenders for a specific organization by RUT."
+description: "Get public tenders for a company by tax ID or domain."
 ---
 
 <ParamField header="X-API-Key" type="string" required>
@@ -9,12 +9,16 @@ description: "Get public tenders for a specific organization by RUT."
 
 ## Request body
 
-<ParamField body="rut" type="string" required>
-  Organization RUT (e.g. `61.979.440-7`).
+<ParamField body="rut" type="string">
+  Company tax ID — RUT (Chile, e.g. `77.261.280-K`) or CNPJ (Brazil, e.g. `28.591.276/0001-00`). One of `rut` or `domain` is required.
+</ParamField>
+
+<ParamField body="domain" type="string">
+  Company domain (e.g. `empresa.com.br`). Resolved to tax ID automatically. One of `rut` or `domain` is required.
 </ParamField>
 
 <ParamField body="country" type="string" required>
-  ISO 3166-1 alpha-2 country code. Supported: `CL`.
+  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`.
 </ParamField>
 
 ## Response
@@ -63,7 +67,7 @@ description: "Get public tenders for a specific organization by RUT."
 </ResponseField>
 
 <ResponseField name="source" type="string">
-  Data source (`mercadopublico` for Chile).
+  Data source: `mercadopublico` for Chile, `pncp` for Brazil.
 </ResponseField>
 
 <ResponseField name="timestamp" type="string">
@@ -72,11 +76,18 @@ description: "Get public tenders for a specific organization by RUT."
 
 <RequestExample>
 
-```bash cURL
+```bash Chile
 curl -X POST https://api.enrichlatam.com/v1/tenders \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"rut": "61.979.440-7", "country": "CL"}'
+  -d '{"rut": "77.261.280-K", "country": "CL"}'
+```
+
+```bash Brazil
+curl -X POST https://api.enrichlatam.com/v1/tenders \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"rut": "28.591.276/0001-00", "country": "BR"}'
 ```
 
 ```python Python
@@ -85,7 +96,7 @@ import requests
 r = requests.post(
     "https://api.enrichlatam.com/v1/tenders",
     headers={"X-API-Key": "YOUR_API_KEY"},
-    json={"rut": "61.979.440-7", "country": "CL"},
+    json={"rut": "77.261.280-K", "country": "CL"},
 )
 print(r.json())
 ```
@@ -94,24 +105,34 @@ print(r.json())
 
 <ResponseExample>
 
-```json 200
+```json 200 Chile
 {
-  "rut": "61.979.440-7",
-  "organization": "Municipalidad de Santiago",
-  "tenders": [
+  "rut": "77.261.280-K",
+  "total_orders": 3,
+  "orders": [
     {
-      "id": "3419-72-LE24",
-      "name": "Adquisición de equipos computacionales",
-      "status": "Publicada",
-      "amount": 15000000,
-      "currency": "CLP",
-      "published_at": "2024-11-01",
-      "closing_at": "2024-11-15",
-      "url": "https://www.mercadopublico.cl/Licitacion/Index/3419-72-LE24"
+      "code": "1003473-1501-SE26",
+      "name": "Compra equipos computacionales",
+      "status": "vigente"
     }
   ],
-  "total": 1,
   "source": "mercadopublico",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+```json 200 Brazil
+{
+  "rut": "28.591.276/0001-00",
+  "total_orders": 2,
+  "orders": [
+    {
+      "code": "90001/2026",
+      "name": "Aquisição de equipamentos de TI",
+      "status": "vigente"
+    }
+  ],
+  "source": "pncp",
   "timestamp": "2026-04-05T10:00:00Z"
 }
 ```

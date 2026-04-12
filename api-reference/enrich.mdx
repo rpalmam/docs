@@ -10,7 +10,7 @@ description: "Get structured firmographic data for a Latin American company."
 ## Request body
 
 <ParamField body="domain" type="string" required>
-  Company domain (e.g. `example.cl`). The API resolves the domain to a tax ID automatically.
+  Company domain (e.g. `example.cl`, `example.com.br`). The API resolves the domain to a tax ID automatically. Supports `.cl` (Chile) and `.com.br` / `.br` (Brazil).
 </ParamField>
 
 ## Response
@@ -23,8 +23,8 @@ description: "Get structured firmographic data for a Latin American company."
   Official legal company name.
 </ResponseField>
 
-<ResponseField name="rut" type="string">
-  Chilean RUT resolved from the domain.
+<ResponseField name="identifier" type="string">
+  Tax ID resolved from the domain — RUT (Chile) or CNPJ (Brazil).
 </ResponseField>
 
 <ResponseField name="activity" type="string">
@@ -32,7 +32,7 @@ description: "Get structured firmographic data for a Latin American company."
 </ResponseField>
 
 <ResponseField name="activity_code" type="string">
-  Economic activity code (CIIU).
+  Economic activity code — CIIU (Chile) or CNAE (Brazil).
 </ResponseField>
 
 <ResponseField name="size" type="string">
@@ -73,11 +73,18 @@ description: "Get structured firmographic data for a Latin American company."
 
 <RequestExample>
 
-```bash cURL
+```bash Chile
 curl -X POST https://api.enrichlatam.com/v1/enrich \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"domain": "example.cl"}'
+```
+
+```bash Brazil
+curl -X POST https://api.enrichlatam.com/v1/enrich \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "example.com.br"}'
 ```
 
 ```python Python
@@ -95,11 +102,11 @@ print(r.json())
 
 <ResponseExample>
 
-```json 200
+```json 200 Chile
 {
   "domain": "example.cl",
   "company_name": "Empresa Ejemplo Spa",
-  "rut": "76.354.771-K",
+  "identifier": "76.354.771-K",
   "activity": "Business Management Consulting Activities",
   "activity_code": "7020",
   "size": "small",
@@ -114,9 +121,28 @@ print(r.json())
 }
 ```
 
+```json 200 Brazil
+{
+  "domain": "example.com.br",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "identifier": "12.345.678/0001-90",
+  "activity": "Consultoria em gestão empresarial",
+  "activity_code": "7020-4/00",
+  "size": "small",
+  "employees_range": null,
+  "region": null,
+  "founded_year": 2015,
+  "status": "active",
+  "tech_stack": [],
+  "emails": [],
+  "country": "BR",
+  "source": "receita_federal"
+}
+```
+
 ```json 404
 {
-  "detail": "Could not resolve RUT for domain 'example.cl'. The company may not have their RUT publicly listed."
+  "detail": "Could not resolve tax ID for domain 'example.cl'. The company may not have their ID publicly listed."
 }
 ```
 

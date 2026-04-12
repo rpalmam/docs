@@ -14,7 +14,7 @@ description: "Search active public tenders by keyword."
 </ParamField>
 
 <ParamField body="country" type="string" required>
-  ISO 3166-1 alpha-2 country code. Supported: `CL`.
+  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`.
 </ParamField>
 
 ## Response
@@ -52,16 +52,23 @@ description: "Search active public tenders by keyword."
 </ResponseField>
 
 <Note>
-  Currently returns up to ~9 results from Mercado Público's public search API. Higher volume and pagination are on the roadmap.
+  Currently returns up to ~9 results per request. For Brazil (PNCP), keyword filtering is applied on the tender description field. Higher volume and pagination are on the roadmap.
 </Note>
 
 <RequestExample>
 
-```bash cURL
+```bash Chile
 curl -X POST https://api.enrichlatam.com/v1/tenders/search \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"keyword": "software desarrollo", "country": "CL"}'
+```
+
+```bash Brazil
+curl -X POST https://api.enrichlatam.com/v1/tenders/search \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "desenvolvimento software", "country": "BR"}'
 ```
 
 ```python Python
@@ -79,7 +86,7 @@ print(r.json())
 
 <ResponseExample>
 
-```json 200
+```json 200 Chile
 {
   "keyword": "software desarrollo",
   "tenders": [
@@ -97,6 +104,28 @@ print(r.json())
   ],
   "total": 1,
   "source": "mercadopublico",
+  "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+```json 200 Brazil
+{
+  "keyword": "desenvolvimento software",
+  "tenders": [
+    {
+      "id": "90001/2026",
+      "name": "Contratação de serviços de desenvolvimento de software",
+      "organization": "Ministério da Saúde",
+      "status": "Publicada",
+      "amount": 250000,
+      "currency": "BRL",
+      "published_at": "2026-03-20",
+      "closing_at": "2026-04-20",
+      "url": "https://pncp.gov.br/app/editais/90001-2026"
+    }
+  ],
+  "total": 1,
+  "source": "pncp",
   "timestamp": "2026-04-05T10:00:00Z"
 }
 ```
