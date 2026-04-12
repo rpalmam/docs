@@ -86,6 +86,17 @@ POST /v1/kyb
 | `end_date` | string | Business termination date, or `null` |
 | `source` | string | Data source (`sii` for Chile, `receita_federal` for Brazil) |
 
+## Data sources and freshness
+
+| Country | Source | Freshness |
+|---------|--------|-----------|
+| Chile 🇨🇱 | SII — nómina pública de contribuyentes | Up to 30 days (see `data_as_of` in response) |
+| Brazil 🇧🇷 | Receita Federal via OpenCNPJ | Real-time |
+
+<Note>
+  For Chile, the response includes a `data_as_of` field with the date of the last registry synchronization. If your use case requires real-time verification, contact [team@enrichlatam.com](mailto:team@enrichlatam.com).
+</Note>
+
 ## Error responses
 
 | Status | Description |
