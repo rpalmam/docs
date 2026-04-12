@@ -1,0 +1,137 @@
+---
+title: "POST /v1/tenders/awarded"
+description: "Get awarded government contracts where the company is the winner."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `tenders` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="rut" type="string">
+  Chilean company RUT (e.g. `77.261.280-K`). Required if `domain` is not provided.
+</ParamField>
+
+<ParamField body="domain" type="string">
+  Company `.cl` domain. Resolved to RUT automatically. Required if `rut` is not provided.
+</ParamField>
+
+## Response
+
+<ResponseField name="rut" type="string">
+  The queried company RUT.
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  Total number of awarded contracts found.
+</ResponseField>
+
+<ResponseField name="contracts" type="array">
+  List of awarded contract objects.
+
+  <Expandable title="Contract object fields">
+    <ResponseField name="code" type="string">
+      Tender code from Mercado Público.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Contract description.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Contract status (e.g. `adjudicada`, `finalizada`).
+    </ResponseField>
+    <ResponseField name="amount" type="number">
+      Awarded amount in local currency. `null` if not disclosed.
+    </ResponseField>
+    <ResponseField name="currency" type="string">
+      Currency code (e.g. `CLP`).
+    </ResponseField>
+    <ResponseField name="awarded_at" type="string">
+      ISO 8601 award date.
+    </ResponseField>
+    <ResponseField name="buyer" type="string">
+      Buying organization name.
+    </ResponseField>
+    <ResponseField name="buyer_rut" type="string">
+      Buying organization RUT.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Data source (`mercadopublico`).
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/tenders/awarded \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"rut": "77.261.280-K"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/tenders/awarded",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"rut": "77.261.280-K"},
+)
+print(r.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "rut": "77.261.280-K",
+  "total": 2,
+  "contracts": [
+    {
+      "code": "2755-2-LP26",
+      "name": "Mantención sistemas TI",
+      "status": "adjudicada",
+      "amount": 15000000.0,
+      "currency": "CLP",
+      "awarded_at": "2026-03-15T00:00:00",
+      "buyer": "Ministerio de Salud",
+      "buyer_rut": "61.002.001-3"
+    },
+    {
+      "code": "1003473-1501-SE26",
+      "name": "Soporte infraestructura",
+      "status": "finalizada",
+      "amount": 8500000.0,
+      "currency": "CLP",
+      "awarded_at": "2026-01-10T00:00:00",
+      "buyer": "Municipalidad de Santiago",
+      "buyer_rut": "69.070.300-8"
+    }
+  ],
+  "source": "mercadopublico"
+}
+```
+
+```json 404
+{
+  "detail": "Could not resolve RUT for domain 'example.cl'."
+}
+```
+
+```json 422
+{
+  "detail": "Provide either 'domain' or 'rut'."
+}
+```
+
+```json 403
+{
+  "detail": "Your plan does not include the 'tenders' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

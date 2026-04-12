@@ -3,12 +3,12 @@ title: Company Enrichment
 description: Get structured firmographic data for Latin American companies by domain.
 ---
 
-The Enrich module returns structured company data from official tax registries. Pass a domain and get back a full company profile — no RUT lookup required.
+The Enrich module returns structured company data from official tax registries. Pass a domain and get back a full company profile — no manual ID lookup required.
 
 ## What it returns
 
-- Legal company name, RUT, and registration status
-- Primary economic activity and CIIU code
+- Legal company name, tax ID, and registration status
+- Primary economic activity and CIIU/CNAE code
 - Company size classification
 - Year of founding
 - Tech stack and contact emails (coming soon)
@@ -18,6 +18,9 @@ The Enrich module returns structured company data from official tax registries. 
 | Country | Input | Source |
 |---------|-------|--------|
 | Chile 🇨🇱 | `.cl` domain | SII via BaseAPI.cl |
+| Brazil 🇧🇷 | `.com.br` or `.br` domain | Receita Federal via OpenCNPJ |
+
+The country is detected automatically from the domain TLD. No `country` parameter needed.
 
 ## Request
 
@@ -35,15 +38,17 @@ POST /v1/enrich
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `domain` | string | ✅ | Company domain. Currently supports `.cl` domains. |
+| `domain` | string | ✅ | Company domain. Supports `.cl` (Chile) and `.com.br` / `.br` (Brazil). |
 
 ## Response
 
-```json
+<CodeGroup>
+
+```json Chile
 {
   "domain": "example.cl",
   "company_name": "Empresa Ejemplo Spa",
-  "rut": "76.354.771-K",
+  "identifier": "76.354.771-K",
   "activity": "Business Management Consulting Activities",
   "activity_code": "7020",
   "size": "small",
@@ -58,15 +63,36 @@ POST /v1/enrich
 }
 ```
 
+```json Brazil
+{
+  "domain": "example.com.br",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "identifier": "12.345.678/0001-90",
+  "activity": "Consultoria em gestão empresarial",
+  "activity_code": "7020-4/00",
+  "size": "small",
+  "employees_range": null,
+  "region": null,
+  "founded_year": 2015,
+  "status": "active",
+  "tech_stack": [],
+  "emails": [],
+  "country": "BR",
+  "source": "receita_federal"
+}
+```
+
+</CodeGroup>
+
 ### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `domain` | string | Queried domain |
 | `company_name` | string | Official legal name |
-| `rut` | string | Resolved Chilean RUT |
+| `identifier` | string | Tax ID — RUT (Chile) or CNPJ (Brazil) |
 | `activity` | string | Primary economic activity |
-| `activity_code` | string | CIIU economic activity code |
+| `activity_code` | string | CIIU (CL) or CNAE (BR) activity code |
 | `size` | string | `small`, `large`, or `unknown` |
 | `employees_range` | string | Estimated employee range (when available) |
 | `region` | string | Administrative region (when available) |
@@ -81,8 +107,8 @@ POST /v1/enrich
 
 | Status | Description |
 |--------|-------------|
-| `404` | Could not resolve RUT for the given domain |
-| `422` | Country not supported (non-.cl domain) |
+| `404` | Could not resolve tax ID for the given domain |
+| `422` | Country not supported (unsupported TLD) |
 | `403` | Missing API key or module not in plan |
 | `503` | Data provider temporarily unavailable |
 

@@ -8,29 +8,92 @@ The Tenders module gives you programmatic access to public procurement tenders f
 ## What it returns
 
 - Active and recent tender listings
-- Tender details: buyer organization, description, status, amounts, and dates
-- Search by keyword across tender titles and descriptions
+- Tender details: code, name, status, and closing date
+- Awarded contracts: amounts, buyer, and award date
+- Search by keyword across tender titles
 
 ## Supported countries
 
-| Country | Source |
-|---------|--------|
-| Chile 🇨🇱 | Mercado Público (mercadopublico.cl) |
+| Country | Source | Endpoints |
+|---------|--------|-----------|
+| Chile 🇨🇱 | Mercado Público (mercadopublico.cl) | `/tenders`, `/tenders/search`, `/tenders/awarded` |
+| Brazil 🇧🇷 | PNCP (pncp.gov.br) | `/tenders`, `/tenders/search` |
 
 ## Endpoints
 
-### Get tenders by RUT
+### Get company contracts
 
-Returns tenders associated with a specific organization (buyer) by their RUT.
+Returns government contracts where the company is the **provider** (supplier), by tax ID or domain.
 
 ```bash
 POST /v1/tenders
 ```
 
+<CodeGroup>
+
+```json Chile
+{
+  "rut": "77.261.280-K",
+  "country": "CL"
+}
+```
+
+```json Brazil
+{
+  "rut": "28.591.276/0001-00",
+  "country": "BR"
+}
+```
+
+```json By domain
+{
+  "domain": "empresa.com.br",
+  "country": "BR"
+}
+```
+
+</CodeGroup>
+
+#### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `rut` | string | ✅* | Tax ID — RUT (CL) or CNPJ (BR). |
+| `domain` | string | ✅* | Company domain. Resolved to RUT or CNPJ automatically. |
+| `country` | string | — | `CL` (default) or `BR`. |
+
+*One of `rut` or `domain` is required.
+
+#### Response
+
 ```json
 {
-  "rut": "61.979.440-7",
-  "country": "CL"
+  "rut": "77.261.280-K",
+  "total_orders": 3,
+  "orders": [
+    {
+      "code": "1003473-1501-SE26",
+      "name": "Compra equipos",
+      "status": "vigente"
+    }
+  ],
+  "source": "mercadopublico"
+}
+```
+
+---
+
+### Get awarded contracts (Chile only)
+
+Returns government contracts **won** by the company — adjudicaciones. Includes amounts and buyer details.
+
+```bash
+POST /v1/tenders/awarded
+```
+
+```json
+{
+  "rut": "77.261.280-K"
 }
 ```
 
@@ -38,38 +101,38 @@ POST /v1/tenders
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `rut` | string | ✅ | Organization RUT |
-| `country` | string | ✅ | Country code. Currently: `CL`. |
+| `rut` | string | ✅* | Chilean company RUT. |
+| `domain` | string | ✅* | Company `.cl` domain. |
+
+*One of `rut` or `domain` is required.
 
 #### Response
 
 ```json
 {
-  "rut": "61.979.440-7",
-  "organization": "Municipalidad de Santiago",
-  "tenders": [
+  "rut": "77.261.280-K",
+  "total": 2,
+  "contracts": [
     {
-      "id": "3419-72-LE24",
-      "name": "Adquisición de equipos computacionales",
-      "status": "Publicada",
-      "amount": 15000000,
+      "code": "2755-2-LP26",
+      "name": "Mantención sistemas TI",
+      "status": "adjudicada",
+      "amount": 15000000.0,
       "currency": "CLP",
-      "published_at": "2024-11-01",
-      "closing_at": "2024-11-15",
-      "url": "https://www.mercadopublico.cl/Licitacion/Index/..."
+      "awarded_at": "2026-03-15T00:00:00",
+      "buyer": "Ministerio de Salud",
+      "buyer_rut": "61.002.001-3"
     }
   ],
-  "total": 1,
-  "source": "mercadopublico",
-  "timestamp": "2026-04-05T10:00:00Z"
+  "source": "mercadopublico"
 }
 ```
 
 ---
 
-### Search tenders by keyword
+### Search tenders
 
-Search active tenders by keyword across all organizations.
+Search active tenders by keyword.
 
 ```bash
 POST /v1/tenders/search
@@ -77,7 +140,7 @@ POST /v1/tenders/search
 
 ```json
 {
-  "keyword": "software desarrollo",
+  "keyword": "software",
   "country": "CL"
 }
 ```
@@ -86,24 +149,40 @@ POST /v1/tenders/search
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `keyword` | string | ✅ | Search term |
-| `country` | string | ✅ | Country code. Currently: `CL`. |
+| `country` | string | ✅ | `CL` or `BR`. |
+| `keyword` | string | — | Text to search in tender names. |
+| `date_from` | string | — | Filter from date (`DD/MM/YYYY`). |
+| `date_to` | string | — | Filter to date (`DD/MM/YYYY`). |
 
 #### Response
 
-Returns the same tender object structure as above, filtered to results matching the keyword.
+```json
+{
+  "total": 2,
+  "results": [
+    {
+      "code": "3704-10-LS26",
+      "name": "Servicio Informática",
+      "status": "cerrada",
+      "closes_at": "2026-04-04T18:00:00"
+    }
+  ],
+  "source": "mercadopublico"
+}
+```
 
 <Note>
-  The search endpoint currently returns up to ~9 results from Mercado Público's public API. Higher volume and pagination are on the roadmap.
+  The search endpoint returns up to 20 results per page. Keyword filtering for Brazil (PNCP) is applied client-side on the tender description field.
 </Note>
 
 ## Error responses
 
 | Status | Description |
 |--------|-------------|
-| `404` | No tenders found for the given RUT |
-| `400` | Invalid parameters |
+| `404` | Could not resolve RUT/CNPJ for the given domain |
+| `422` | Country not supported |
 | `403` | Missing API key or module not in plan |
+| `503` | Data provider temporarily unavailable |
 
 ## Pricing
 
@@ -112,10 +191,10 @@ Returns the same tender object structure as above, filtered to results matching 
 | Tenders | $29/month | Full access, no request limits |
 
 <Columns cols={2}>
-  <Card title="Tenders API Reference" icon="terminal" href="/api-reference/tenders">
-    GET /v1/tenders reference.
+  <Card title="POST /v1/tenders" icon="terminal" href="/api-reference/tenders">
+    Company contracts by RUT or CNPJ.
   </Card>
-  <Card title="Tenders Search Reference" icon="magnifying-glass" href="/api-reference/tenders-search">
-    GET /v1/tenders/search reference.
+  <Card title="POST /v1/tenders/search" icon="magnifying-glass" href="/api-reference/tenders-search">
+    Search active tenders by keyword.
   </Card>
 </Columns>

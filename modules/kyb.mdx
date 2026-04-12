@@ -7,7 +7,7 @@ The KYB module lets you verify any company's legal status and tax registration d
 
 ## What it returns
 
-For a given tax ID (RUT in Chile), the API returns:
+For a given tax ID (RUT in Chile, CNPJ in Brazil), the API returns:
 
 - Legal company name (`company_name`)
 - Active status (`verified`) and registration status (`status`)
@@ -19,6 +19,7 @@ For a given tax ID (RUT in Chile), the API returns:
 | Country | Identifier | Source |
 |---------|-----------|--------|
 | Chile 🇨🇱 | RUT (e.g. `76354771-K`) | SII (Servicio de Impuestos Internos) |
+| Brazil 🇧🇷 | CNPJ (e.g. `12.345.678/0001-90`) | Receita Federal via OpenCNPJ |
 
 ## Request
 
@@ -37,12 +38,14 @@ POST /v1/kyb
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `identifier` | string | ✅ | Company tax ID. For Chile: RUT with or without formatting. |
-| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Currently: `CL`. |
+| `identifier` | string | ✅ | Company tax ID. RUT for Chile, CNPJ for Brazil. Formatting optional. |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`. |
 
 ## Response
 
-```json
+<CodeGroup>
+
+```json Chile
 {
   "identifier": "76354771-K",
   "country": "CL",
@@ -55,6 +58,21 @@ POST /v1/kyb
 }
 ```
 
+```json Brazil
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "status": "active",
+  "verified": true,
+  "founded_year": 2015,
+  "end_date": null,
+  "source": "receita_federal"
+}
+```
+
+</CodeGroup>
+
 ### Response fields
 
 | Field | Type | Description |
@@ -66,13 +84,13 @@ POST /v1/kyb
 | `verified` | boolean | `true` if active tax registration |
 | `founded_year` | integer | Year of first tax registration |
 | `end_date` | string | Business termination date, or `null` |
-| `source` | string | Data source (`sii` for Chile) |
+| `source` | string | Data source (`sii` for Chile, `receita_federal` for Brazil) |
 
 ## Error responses
 
 | Status | Description |
 |--------|-------------|
-| `422` | Invalid or malformed RUT |
+| `422` | Invalid or malformed identifier |
 | `422` | Country not supported |
 | `403` | Missing API key or module not in plan |
 | `503` | Data provider temporarily unavailable |

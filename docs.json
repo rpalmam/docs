@@ -50,7 +50,8 @@
             "group": "Tenders",
             "pages": [
               "api-reference/tenders",
-              "api-reference/tenders-search"
+              "api-reference/tenders-search",
+              "api-reference/tenders-awarded"
             ]
           }
         ]
