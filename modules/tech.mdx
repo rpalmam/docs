@@ -1,0 +1,73 @@
+---
+title: Tech Detection
+description: Detect the technology stack of any company website — CRM, analytics, ecommerce, payments, and more.
+---
+
+The Tech module detects the technologies a company uses on their website. It identifies CRM systems, marketing platforms, ecommerce engines, payment processors, analytics tools, and live chat — from a single domain lookup.
+
+## What it returns
+
+- **CRM** — HubSpot, Salesforce, Pipedrive, Zoho CRM, Freshsales, Monday.com
+- **Email marketing** — Mailchimp, Klaviyo, ActiveCampaign, Brevo, Constant Contact
+- **Ecommerce** — Shopify, WooCommerce, Magento, PrestaShop, VTEX, Nuvemshop, Wix, Squarespace
+- **Payments** — Stripe, PayPal, MercadoPago, Transbank, Khipu, Conekta, Adyen, Kushki
+- **Analytics** — Google Analytics, Mixpanel, Amplitude, Segment, Hotjar, Microsoft Clarity, PostHog
+- **Live chat** — Intercom, Zendesk Chat, Drift, Tidio, Crisp, Freshchat, LiveChat, Tawk.to
+
+## Coverage
+
+Tech detection is **country-agnostic** — it works for any publicly accessible domain, regardless of where the company is registered. A Shopify store in Chile, Brazil, or Mexico is detected the same way.
+
+## Confidence levels
+
+The response includes a `confidence` field indicating the quality of the detection:
+
+| Value | Meaning |
+|-------|---------|
+| `full` | JavaScript fully rendered — highest accuracy |
+| `partial` | Bot protection blocked JS rendering — HTML-only fallback |
+| `cached` | Result served from cache (7-day TTL) |
+
+A `partial` result can still detect many technologies (analytics scripts, payment buttons, chat widgets in HTML), but may miss technologies that only load after full JS execution.
+
+## Endpoint
+
+```bash
+POST /v1/tech
+```
+
+```json
+{
+  "domain": "empresa.cl"
+}
+```
+
+### Response
+
+```json
+{
+  "domain": "empresa.cl",
+  "crm": "HubSpot",
+  "email_marketing": "Mailchimp",
+  "ecommerce": null,
+  "payments": "MercadoPago",
+  "analytics": "Google Analytics",
+  "live_chat": "Intercom",
+  "raw": ["Google Analytics", "HubSpot", "Intercom", "Mailchimp", "MercadoPago"],
+  "confidence": "full"
+}
+```
+
+The `raw` array contains every detected technology. The structured fields (`crm`, `analytics`, etc.) return the first match per category.
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Tech | $29/month | 1,000 lookups |
+| Overage | $0.10/lookup | Billed at end of month |
+| PAYG | $0.10/lookup | No subscription required |
+
+<Card title="POST /v1/tech" icon="terminal" href="/api-reference/tech">
+  Full API reference with request/response examples.
+</Card>

@@ -1,0 +1,141 @@
+---
+title: "POST /v1/tech"
+description: "Detect the technology stack of any company website."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `tech` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="domain" type="string" required>
+  Company website domain, e.g. `empresa.cl` or `company.com.br`. Works for any publicly accessible domain worldwide.
+</ParamField>
+
+## Response
+
+<ResponseField name="domain" type="string">
+  The queried domain (normalized to lowercase).
+</ResponseField>
+
+<ResponseField name="crm" type="string | null">
+  Detected CRM platform. Examples: `HubSpot`, `Salesforce`, `Pipedrive`. `null` if none detected.
+</ResponseField>
+
+<ResponseField name="email_marketing" type="string | null">
+  Detected email marketing platform. Examples: `Mailchimp`, `Klaviyo`, `ActiveCampaign`. `null` if none detected.
+</ResponseField>
+
+<ResponseField name="ecommerce" type="string | null">
+  Detected ecommerce platform. Examples: `Shopify`, `WooCommerce`, `VTEX`, `Nuvemshop`. `null` if none detected.
+</ResponseField>
+
+<ResponseField name="payments" type="string | null">
+  Detected payment processor. Examples: `Stripe`, `MercadoPago`, `Transbank`, `Conekta`. `null` if none detected.
+</ResponseField>
+
+<ResponseField name="analytics" type="string | null">
+  Detected analytics platform. Examples: `Google Analytics`, `Mixpanel`, `Amplitude`. `null` if none detected.
+</ResponseField>
+
+<ResponseField name="live_chat" type="string | null">
+  Detected live chat or customer support widget. Examples: `Intercom`, `Zendesk Chat`, `Drift`. `null` if none detected.
+</ResponseField>
+
+<ResponseField name="raw" type="array">
+  Full list of all detected technologies across all categories, sorted alphabetically.
+</ResponseField>
+
+<ResponseField name="confidence" type="string">
+  Detection quality indicator:
+  - `full` — JavaScript rendered, highest accuracy
+  - `partial` — HTML-only fallback (bot protection triggered)
+  - `cached` — Result served from cache (7-day TTL)
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/tech \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "empresa.cl"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/tech",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"domain": "empresa.cl"},
+)
+print(r.json())
+```
+
+```javascript Node.js
+const res = await fetch("https://api.enrichlatam.com/v1/tech", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ domain: "empresa.cl" }),
+});
+console.log(await res.json());
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 Full detection
+{
+  "domain": "empresa.cl",
+  "crm": "HubSpot",
+  "email_marketing": "Mailchimp",
+  "ecommerce": null,
+  "payments": "MercadoPago",
+  "analytics": "Google Analytics",
+  "live_chat": "Intercom",
+  "raw": ["Google Analytics", "HubSpot", "Intercom", "Mailchimp", "MercadoPago"],
+  "confidence": "full"
+}
+```
+
+```json 200 Ecommerce store
+{
+  "domain": "tienda.com.br",
+  "crm": null,
+  "email_marketing": "Klaviyo",
+  "ecommerce": "Shopify",
+  "payments": "Stripe",
+  "analytics": "Google Analytics",
+  "live_chat": null,
+  "raw": ["Google Analytics", "Klaviyo", "Shopify", "Stripe"],
+  "confidence": "full"
+}
+```
+
+```json 200 Partial (bot protection)
+{
+  "domain": "protected-site.com",
+  "crm": null,
+  "email_marketing": null,
+  "ecommerce": null,
+  "payments": "MercadoPago",
+  "analytics": "Google Analytics",
+  "live_chat": null,
+  "raw": ["Google Analytics", "MercadoPago"],
+  "confidence": "partial"
+}
+```
+
+```json 403
+{
+  "detail": "Your plan does not include the 'tech' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>
