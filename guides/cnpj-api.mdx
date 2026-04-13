@@ -1,44 +1,43 @@
 ---
-title: "CNPJ API 2026: cómo consultar datos de empresas brasileñas"
-description: "Guía práctica para acceder a datos de empresas brasileñas por CNPJ — validación, fuentes gratuitas, y cómo obtener nombre, estado, actividad y socios con una API."
+title: "CNPJ API 2026: how to query Brazilian company data"
+description: "Practical guide to accessing Brazilian company data by CNPJ — validation, free data sources, and how to retrieve name, status, activity, and partners via API."
 ---
 
-El CNPJ (Cadastro Nacional da Pessoa Jurídica) es el identificador fiscal de empresas en Brasil. Con más de 55 millones de empresas registradas, Brasil es el mercado B2B más grande de América Latina.
+The CNPJ (Cadastro Nacional da Pessoa Jurídica) is the tax identifier for companies in Brazil. With over 55 million registered companies, Brazil is the largest B2B market in Latin America.
 
-Esta guía cubre:
-1. Estructura y validación del CNPJ
-2. Fuentes de datos oficiales disponibles en 2026
-3. Cómo consultar datos de empresa con la API de EnrichLATAM
-
----
-
-## Estructura del CNPJ
-
-Un CNPJ tiene el formato `XX.XXX.XXX/XXXX-DD`, donde:
-- Los primeros 8 dígitos identifican la empresa matriz
-- Los 4 dígitos siguientes identifican el establecimiento (filial)
-- Los últimos 2 son dígitos verificadores
-
-Ejemplo: `11.222.333/0001-81`
-
-El sufijo `/0001` indica la sede central. Una empresa puede tener múltiples CNPJs para distintas sucursales (`/0002`, `/0003`, etc.).
+This guide covers:
+1. CNPJ structure and validation
+2. Official data sources available in 2026
+3. How to query company data with the EnrichLATAM API
 
 ---
 
-## 1. Validar el CNPJ en Python
+## CNPJ structure
+
+A CNPJ has the format `XX.XXX.XXX/XXXX-DD`, where:
+- The first 8 digits identify the parent company
+- The next 4 digits identify the establishment (branch)
+- The last 2 are check digits
+
+Example: `11.222.333/0001-81`
+
+The `/0001` suffix indicates the headquarters. A company can have multiple CNPJs for different branches (`/0002`, `/0003`, etc.).
+
+---
+
+## 1. Validate a CNPJ in Python
 
 ```python
 import re
 
-def validar_cnpj(cnpj: str) -> bool:
-    """Valida formato y dígitos verificadores de un CNPJ brasileño."""
-    # Extraer solo dígitos
+def validate_cnpj(cnpj: str) -> bool:
+    """Validates format and check digits of a Brazilian CNPJ."""
     digits = re.sub(r"\D", "", cnpj)
 
     if len(digits) != 14:
         return False
 
-    # Rechazar CNPJs con todos los dígitos iguales
+    # Reject CNPJs with all identical digits
     if len(set(digits)) == 1:
         return False
 
@@ -54,58 +53,58 @@ def validar_cnpj(cnpj: str) -> bool:
     return int(digits[12]) == dv1 and int(digits[13]) == dv2
 
 
-print(validar_cnpj("11.222.333/0001-81"))  # True
-print(validar_cnpj("00.000.000/0000-00"))  # False
-print(validar_cnpj("11222333000181"))       # True
+print(validate_cnpj("11.222.333/0001-81"))  # True
+print(validate_cnpj("00.000.000/0000-00"))  # False
+print(validate_cnpj("11222333000181"))       # True
 ```
 
 ---
 
-## 2. Normalizar el formato
+## 2. Normalize the format
 
 ```python
-def normalizar_cnpj(cnpj: str) -> str | None:
+def normalize_cnpj(cnpj: str) -> str | None:
     """
-    Normaliza un CNPJ al formato estándar XX.XXX.XXX/XXXX-DD.
-    Retorna None si el CNPJ es inválido.
+    Normalizes a CNPJ to the standard format XX.XXX.XXX/XXXX-DD.
+    Returns None if the CNPJ is invalid.
     """
     digits = re.sub(r"\D", "", cnpj.strip())
 
-    if not validar_cnpj(digits):
+    if not validate_cnpj(digits):
         return None
 
     return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
 
 
-print(normalizar_cnpj("11222333000181"))       # 11.222.333/0001-81
-print(normalizar_cnpj("11.222.333/0001-81"))   # 11.222.333/0001-81
+print(normalize_cnpj("11222333000181"))       # 11.222.333/0001-81
+print(normalize_cnpj("11.222.333/0001-81"))   # 11.222.333/0001-81
 ```
 
 ---
 
-## 3. Fuentes de datos oficiales en 2026
+## 3. Official data sources in 2026
 
-| Fuente | Tipo | Costo | Cobertura |
-|--------|------|-------|-----------|
-| **Receita Federal (OpenCNPJ)** | API REST pública | Gratuito | 55M+ empresas, datos completos |
-| **Junta Comercial (JUCESP, etc.)** | Portal web por estado | Gratuito (consulta) | Actos societarios, socios |
-| **PNCP** | API REST OCDS | Gratuito | Contratos federales desde 2017 |
+| Source | Type | Cost | Coverage |
+|--------|------|------|----------|
+| **Receita Federal (OpenCNPJ)** | Public REST API | Free | 55M+ companies, complete data |
+| **Junta Comercial (JUCESP, etc.)** | State web portal | Free (query) | Corporate acts, partners |
+| **PNCP** | OCDS REST API | Free | Federal contracts since 2017 |
 
-**OpenCNPJ** (`https://open.cnpj.ws`) es la fuente más completa: nombre, situação cadastral, data de abertura, atividade econômica (CNAE), natureza jurídica, endereço, quadro de sócios y administradores (QSA).
+**OpenCNPJ** (`https://open.cnpj.ws`) is the most complete source: legal name, situação cadastral, opening date, economic activity (CNAE), legal nature, address, and the partner/administrator registry (QSA).
 
 ---
 
-## 4. Consultar datos de empresa con la API
+## 4. Query company data with the API
 
-EnrichLATAM conecta con la Receita Federal y expone los datos en un formato consistente, igual al que usas para Chile:
+EnrichLATAM connects to the Receita Federal and exposes the data in a consistent format — the same interface you use for Chile:
 
 ```python
 import requests
 
 API_KEY = "your_api_key"
 
-def enrich_empresa_br(cnpj: str) -> dict:
-    """Obtiene datos de empresa brasileña por CNPJ usando EnrichLATAM."""
+def enrich_company_br(cnpj: str) -> dict:
+    """Fetches Brazilian company data by CNPJ using EnrichLATAM."""
     response = requests.post(
         "https://api.enrichlatam.com/v1/enrich",
         headers={"X-API-Key": API_KEY},
@@ -116,47 +115,38 @@ def enrich_empresa_br(cnpj: str) -> dict:
 
 
 cnpj = "11.222.333/0001-81"
-if validar_cnpj(cnpj):
-    datos = enrich_empresa_br(cnpj)
-    print(datos["company_name"])    # Razão social
-    print(datos["status"])          # active / inactive / suspended
-    print(datos["activity"])        # Atividade econômica principal (CNAE)
+if validate_cnpj(cnpj):
+    data = enrich_company_br(cnpj)
+    print(data["company_name"])    # Razão social
+    print(data["status"])          # active / inactive / suspended
+    print(data["activity"])        # Main economic activity (CNAE)
 ```
 
-**Respuesta de ejemplo:**
+**Example response:**
 
 ```json
 {
   "country": "BR",
   "identifier": "11.222.333/0001-81",
-  "company_name": "EMPRESA EXEMPLO LTDA",
-  "trade_name": "Exemplo",
+  "company_name": "EXAMPLE COMPANY LTDA",
   "status": "active",
-  "activity": "Desenvolvimento de programas de computador sob encomenda",
-  "cnae_code": "6201-5/01",
-  "legal_nature": "Sociedade Empresária Limitada",
-  "address": {
-    "street": "Rua das Flores, 123",
-    "neighborhood": "Centro",
-    "city": "São Paulo",
-    "state": "SP",
-    "zip_code": "01310-100"
-  },
-  "founded_date": "2010-03-15",
-  "capital": 100000.0,
-  "source": "receita_federal",
-  "data_as_of": "2026-04-01"
+  "activity": "Custom software development",
+  "activity_code": "6201-5/01",
+  "size": "small",
+  "region": "São Paulo, SP",
+  "founded_year": 2010,
+  "source": "receita_federal"
 }
 ```
 
 ---
 
-## 5. KYB — Verificación empresarial
+## 5. KYB — Business verification
 
-Para casos de compliance o onboarding B2B, usa el endpoint `/v1/kyb` que retorna el subconjunto de datos relevante para verificación:
+For compliance or B2B onboarding use cases, use the `/v1/kyb` endpoint which returns the subset of data relevant for verification:
 
 ```python
-def kyb_empresa_br(cnpj: str) -> dict:
+def kyb_company_br(cnpj: str) -> dict:
     response = requests.post(
         "https://api.enrichlatam.com/v1/kyb",
         headers={"X-API-Key": API_KEY},
@@ -166,20 +156,20 @@ def kyb_empresa_br(cnpj: str) -> dict:
     return response.json()
 
 
-resultado = kyb_empresa_br("11.222.333/0001-81")
-print(resultado["verified"])       # True / False
-print(resultado["status"])         # active
-print(resultado["legal_name"])     # Nombre registrado
+result = kyb_company_br("11.222.333/0001-81")
+print(result["verified"])       # True / False
+print(result["status"])         # active
+print(result["legal_name"])     # Registered name
 ```
 
 ---
 
-## 6. Verificar contratos con el gobierno
+## 6. Check government contracts
 
-Para saber si una empresa tiene contratos con el gobierno federal brasileño:
+To see whether a company has contracts with the Brazilian federal government:
 
 ```python
-def contratos_gobierno_br(cnpj: str) -> dict:
+def government_contracts_br(cnpj: str) -> dict:
     response = requests.post(
         "https://api.enrichlatam.com/v1/tenders",
         headers={"X-API-Key": API_KEY},
@@ -189,29 +179,29 @@ def contratos_gobierno_br(cnpj: str) -> dict:
     return response.json()
 
 
-contratos = contratos_gobierno_br("28.591.276/0001-00")
-print(f"Total contratos: {contratos['total_orders']}")
-for c in contratos["orders"]:
+contracts = government_contracts_br("28.591.276/0001-00")
+print(f"Total contracts: {contracts['total_orders']}")
+for c in contracts["orders"]:
     print(f"  {c['code']} — {c['name']}")
 ```
 
 ---
 
-## Diferencias clave Brasil vs. Chile
+## Brazil vs. Chile — key differences
 
-| Aspecto | Brasil 🇧🇷 | Chile 🇨🇱 |
-|---------|-----------|---------|
-| Identificador | CNPJ (14 dígitos) | RUT (8 dígitos + DV) |
-| Dígitos verificadores | 2 | 1 (`0`–`9` o `K`) |
-| Empresas registradas | ~55 millones | ~2 millones |
-| Filiales | CNPJ separado por sucursal | Mismo RUT |
-| API oficial gratuita | OpenCNPJ (Receita Federal) | Archivo masivo SII |
+| Aspect | Brazil 🇧🇷 | Chile 🇨🇱 |
+|--------|-----------|---------|
+| Identifier | CNPJ (14 digits) | RUT (8 digits + check digit) |
+| Check digits | 2 | 1 (`0`–`9` or `K`) |
+| Registered companies | ~55 million | ~2 million |
+| Branches | Separate CNPJ per branch | Same RUT |
+| Free official API | OpenCNPJ (Receita Federal) | SII bulk file |
 
 ---
 
-## Recursos
+## Resources
 
-- [Documentación `/v1/enrich`](/api-reference/enrich)
-- [Documentación `/v1/kyb`](/api-reference/kyb)
-- [Documentación `/v1/tenders`](/api-reference/tenders)
+- [`/v1/enrich` reference](/api-reference/enrich)
+- [`/v1/kyb` reference](/api-reference/kyb)
+- [`/v1/tenders` reference](/api-reference/tenders)
 - [Quickstart](/quickstart)

@@ -1,35 +1,35 @@
 ---
-title: "Cómo validar RUT chileno en Python (con API de datos de empresa)"
-description: "Guía completa para validar el formato y dígito verificador del RUT en Python, y cómo enriquecer los datos de la empresa con la API del SII."
+title: "How to validate a Chilean RUT in Python"
+description: "Complete guide to validating RUT format and check digit in Python, and how to enrich company data using the SII API."
 ---
 
-El RUT (Rol Único Tributario) es el identificador fiscal de personas y empresas en Chile. Si estás construyendo un formulario de registro, un flujo KYB, o simplemente procesando datos de empresas chilenas, necesitarás validarlo correctamente.
+The RUT (Rol Único Tributario) is the tax identifier for individuals and companies in Chile. If you're building a registration form, a KYB flow, or processing Chilean company data, you'll need to validate it correctly.
 
-Esta guía cubre:
-1. Validar el formato y dígito verificador del RUT
-2. Normalizar distintos formatos de entrada
-3. Enriquecer los datos de la empresa usando la API de EnrichLATAM
-
----
-
-## Estructura del RUT
-
-Un RUT chileno tiene la forma `XXXXXXXX-D`, donde:
-- `XXXXXXXX` es la parte numérica (6 a 8 dígitos)
-- `D` es el dígito verificador (`0`–`9` o `K`)
-
-Ejemplos válidos: `76.354.771-K`, `12345678-9`, `76354771K`
+This guide covers:
+1. Validating the RUT format and check digit
+2. Normalizing different input formats
+3. Enriching company data using the EnrichLATAM API
 
 ---
 
-## 1. Validar el dígito verificador
+## RUT structure
 
-El dígito verificador se calcula con el algoritmo Módulo 11:
+A Chilean RUT has the form `XXXXXXXX-D`, where:
+- `XXXXXXXX` is the numeric part (6 to 8 digits)
+- `D` is the check digit (`0`–`9` or `K`)
+
+Valid examples: `76.354.771-K`, `12345678-9`, `76354771K`
+
+---
+
+## 1. Validate the check digit
+
+The check digit is calculated using the Modulo 11 algorithm:
 
 ```python
-def calcular_dv(numero: str) -> str:
-    """Calcula el dígito verificador de un RUT chileno."""
-    digits = [int(d) for d in reversed(numero)]
+def calculate_dv(number: str) -> str:
+    """Calculates the check digit of a Chilean RUT."""
+    digits = [int(d) for d in reversed(number)]
     series = [2, 3, 4, 5, 6, 7]
     total = sum(d * series[i % 6] for i, d in enumerate(digits))
     remainder = 11 - (total % 11)
@@ -40,94 +40,92 @@ def calcular_dv(numero: str) -> str:
     return str(remainder)
 
 
-def validar_rut(rut: str) -> bool:
+def validate_rut(rut: str) -> bool:
     """
-    Valida formato y dígito verificador de un RUT chileno.
-    Acepta formatos: '76.354.771-K', '76354771-K', '76354771K'
+    Validates the format and check digit of a Chilean RUT.
+    Accepts formats: '76.354.771-K', '76354771-K', '76354771K'
     """
     import re
-    # Normalizar: quitar puntos y guión, convertir a mayúsculas
     rut_clean = re.sub(r"[.\-]", "", rut.strip().upper())
 
     if len(rut_clean) < 2:
         return False
 
-    numero, dv = rut_clean[:-1], rut_clean[-1]
+    number, dv = rut_clean[:-1], rut_clean[-1]
 
-    if not numero.isdigit():
+    if not number.isdigit():
         return False
 
-    return calcular_dv(numero) == dv
+    return calculate_dv(number) == dv
 
 
-# Ejemplos
-print(validar_rut("76.354.771-K"))  # True
-print(validar_rut("76.354.771-0"))  # False
-print(validar_rut("12345678-9"))    # True
+# Examples
+print(validate_rut("76.354.771-K"))  # True
+print(validate_rut("76.354.771-0"))  # False
+print(validate_rut("12345678-9"))    # True
 ```
 
 ---
 
-## 2. Normalizar el formato
+## 2. Normalize the format
 
-En la práctica, recibirás RUTs en distintos formatos. Esta función los normaliza a `XX.XXX.XXX-D`:
+In practice, you'll receive RUTs in different formats. This function normalizes them to `XX.XXX.XXX-D`:
 
 ```python
 import re
 
-def normalizar_rut(rut: str) -> str | None:
+def normalize_rut(rut: str) -> str | None:
     """
-    Normaliza un RUT al formato estándar con puntos y guión.
-    Retorna None si el RUT es inválido.
+    Normalizes a RUT to the standard format with dots and dash.
+    Returns None if the RUT is invalid.
     """
     rut_clean = re.sub(r"[.\-\s]", "", rut.strip().upper())
 
     if len(rut_clean) < 2 or not rut_clean[:-1].isdigit():
         return None
 
-    numero, dv = rut_clean[:-1], rut_clean[-1]
+    number, dv = rut_clean[:-1], rut_clean[-1]
 
-    if not validar_rut(rut):
+    if not validate_rut(rut):
         return None
 
-    # Formatear con puntos: 76354771 -> 76.354.771
-    numero_formateado = "{:,}".format(int(numero)).replace(",", ".")
-    return f"{numero_formateado}-{dv}"
+    formatted = "{:,}".format(int(number)).replace(",", ".")
+    return f"{formatted}-{dv}"
 
 
-print(normalizar_rut("76354771K"))       # 76.354.771-K
-print(normalizar_rut("76.354.771-K"))   # 76.354.771-K
-print(normalizar_rut("  76354771-K "))  # 76.354.771-K
-print(normalizar_rut("invalid"))        # None
+print(normalize_rut("76354771K"))       # 76.354.771-K
+print(normalize_rut("76.354.771-K"))   # 76.354.771-K
+print(normalize_rut("  76354771-K "))  # 76.354.771-K
+print(normalize_rut("invalid"))        # None
 ```
 
 ---
 
-## 3. Rechazar RUTs de personas naturales
+## 3. Reject personal RUTs
 
-Si tu aplicación solo debe procesar empresas (ej. para KYB o compliance), rechaza RUTs con parte numérica menor a 50.000.000. En Chile, las empresas tienen RUTs en el rango 60M–99M y las personas naturales siempre están por debajo de ~27M.
+If your application should only process companies (e.g. for KYB or compliance), reject RUTs with a numeric part below 50,000,000. In Chile, companies have RUTs in the 60M–99M range while individuals are always below ~27M.
 
 ```python
-def es_empresa(rut: str) -> bool:
-    """Retorna True si el RUT corresponde a una persona jurídica (empresa)."""
+def is_company(rut: str) -> bool:
+    """Returns True if the RUT belongs to a legal entity (company)."""
     rut_clean = re.sub(r"[.\-]", "", rut.strip().upper())
-    numero = rut_clean[:-1]
-    return numero.isdigit() and int(numero) >= 50_000_000
+    number = rut_clean[:-1]
+    return number.isdigit() and int(number) >= 50_000_000
 ```
 
 ---
 
-## 4. Obtener datos de la empresa con la API
+## 4. Fetch company data with the API
 
-Una vez validado el RUT, puedes obtener el nombre legal, actividad económica, estado tributario, representante legal y más con una sola llamada:
+Once the RUT is validated, you can get the legal name, economic activity, tax status, and more with a single call:
 
 ```python
 import requests
 
 API_KEY = "your_api_key"
 
-def enrich_empresa(rut: str) -> dict:
-    """Obtiene datos de empresa chilena por RUT usando EnrichLATAM."""
+def enrich_company(rut: str) -> dict:
+    """Fetches Chilean company data by RUT using EnrichLATAM."""
     response = requests.post(
         "https://api.enrichlatam.com/v1/enrich",
         headers={"X-API-Key": API_KEY},
@@ -138,24 +136,23 @@ def enrich_empresa(rut: str) -> dict:
 
 
 rut = "76.354.771-K"
-if validar_rut(rut) and es_empresa(rut):
-    datos = enrich_empresa(rut)
-    print(datos["company_name"])   # Nombre legal
-    print(datos["status"])         # active / inactive
-    print(datos["activity"])       # Giro comercial
+if validate_rut(rut) and is_company(rut):
+    data = enrich_company(rut)
+    print(data["company_name"])   # Legal name
+    print(data["status"])         # active / inactive
+    print(data["activity"])       # Business activity
 ```
 
-**Respuesta de ejemplo:**
+**Example response:**
 
 ```json
 {
   "country": "CL",
   "identifier": "76.354.771-K",
-  "company_name": "EMPRESA EJEMPLO SpA",
+  "company_name": "EXAMPLE COMPANY SpA",
   "status": "active",
-  "activity": "Actividades de servicios de tecnología de la información",
-  "address": "Av. Providencia 1234, Santiago",
-  "legal_representative": "Juan Pérez González",
+  "activity": "Information technology services",
+  "region": "Región Metropolitana",
   "source": "sii",
   "data_as_of": "2026-03-01"
 }
@@ -163,31 +160,31 @@ if validar_rut(rut) and es_empresa(rut):
 
 ---
 
-## 5. Flujo completo: validar + enriquecer
+## 5. Full flow: validate + enrich
 
 ```python
-def procesar_rut(rut: str) -> dict:
-    rut_norm = normalizar_rut(rut)
+def process_rut(rut: str) -> dict:
+    rut_norm = normalize_rut(rut)
     if not rut_norm:
-        return {"error": "RUT inválido"}
-    if not es_empresa(rut_norm):
-        return {"error": "Solo se aceptan RUTs de empresas"}
+        return {"error": "Invalid RUT"}
+    if not is_company(rut_norm):
+        return {"error": "Only company RUTs are accepted"}
     try:
-        return enrich_empresa(rut_norm)
+        return enrich_company(rut_norm)
     except requests.HTTPError as e:
         return {"error": str(e)}
 ```
 
 ---
 
-## Fuente de datos
+## Data source
 
-Los datos de empresas chilenas se obtienen directamente del SII (Servicio de Impuestos Internos), la autoridad tributaria de Chile. EnrichLATAM usa el archivo masivo público del SII como capa principal, con latencia máxima de 30 días para actualizaciones.
+Chilean company data is sourced directly from the SII (Servicio de Impuestos Internos), Chile's tax authority. EnrichLATAM uses the SII's official public bulk file as the primary layer, with a maximum data latency of 30 days.
 
 ---
 
-## Recursos
+## Resources
 
-- [Documentación `/v1/enrich`](/api-reference/enrich)
-- [Documentación `/v1/kyb`](/api-reference/kyb)
+- [`/v1/enrich` reference](/api-reference/enrich)
+- [`/v1/kyb` reference](/api-reference/kyb)
 - [Quickstart](/quickstart)
