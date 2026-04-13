@@ -35,7 +35,7 @@
             "pages": [
               "guides/validate-rut-python",
               "guides/cnpj-api",
-              "guides/licitaciones-api"
+              "guides/tenders-api"
             ]
           }
         ]
