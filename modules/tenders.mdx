@@ -18,6 +18,7 @@ The Tenders module gives you programmatic access to public procurement tenders f
 |---------|--------|-----------|
 | Chile 🇨🇱 | Mercado Público (mercadopublico.cl) | `/tenders`, `/tenders/search`, `/tenders/awarded` |
 | Brazil 🇧🇷 | PNCP (pncp.gov.br) | `/tenders`, `/tenders/search` |
+| Mexico 🇲🇽 | ComprasMX — OCDS (api.datos.gob.mx) | `/tenders`, `/tenders/search` |
 
 ## Endpoints
 
@@ -52,15 +53,22 @@ POST /v1/tenders
 }
 ```
 
+```json Mexico
+{
+  "rut": "EMP123456ABC",
+  "country": "MX"
+}
+```
+
 </CodeGroup>
 
 #### Parameters
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `rut` | string | ✅* | Tax ID — RUT (CL) or CNPJ (BR). |
-| `domain` | string | ✅* | Company domain. Resolved to RUT or CNPJ automatically. |
-| `country` | string | — | `CL` (default) or `BR`. |
+| `rut` | string | ✅* | Tax ID — RUT (CL), CNPJ (BR), or RFC (MX). Domain resolution not available for MX. |
+| `domain` | string | ✅* | Company domain. Resolved to RUT or CNPJ automatically (CL/BR only). |
+| `country` | string | — | `CL` (default), `BR`, or `MX`. |
 
 *One of `rut` or `domain` is required.
 
@@ -149,7 +157,7 @@ POST /v1/tenders/search
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `country` | string | ✅ | `CL` or `BR`. |
+| `country` | string | ✅ | `CL`, `BR`, or `MX`. |
 | `keyword` | string | — | Text to search in tender names. |
 | `date_from` | string | — | Filter from date (`DD/MM/YYYY`). |
 | `date_to` | string | — | Filter to date (`DD/MM/YYYY`). |
@@ -181,8 +189,9 @@ POST /v1/tenders/search
 |--------|---------|---------|
 | Mercado Público (mercadopublico.cl) | Chile 🇨🇱 | Public data — Chilean Law 20.285 |
 | PNCP — Portal Nacional de Contratações Públicas (pncp.gov.br) | Brazil 🇧🇷 | [CC BY-ND 3.0](https://creativecommons.org/licenses/by-nd/3.0/) |
+| ComprasMX — OCDS (api.datos.gob.mx) | Mexico 🇲🇽 | Open data — Mexican Federal Open Data Decree 2015 |
 
-Tenders data for Brazil is sourced from PNCP (pncp.gov.br), licensed under Creative Commons Attribution-NoDerivatives 3.0.
+Tenders data for Brazil is sourced from PNCP (pncp.gov.br), licensed under Creative Commons Attribution-NoDerivatives 3.0. Mexico data is sourced from the federal open contracting API (ComprasMX/OCDS), published under Mexico's Open Data Decree (DOF 20/02/2015).
 
 ---
 

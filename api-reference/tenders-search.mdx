@@ -14,7 +14,7 @@ description: "Search active public tenders by keyword."
 </ParamField>
 
 <ParamField body="country" type="string" required>
-  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`.
+  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`, `MX`.
 </ParamField>
 
 ## Response
@@ -52,7 +52,7 @@ description: "Search active public tenders by keyword."
 </ResponseField>
 
 <Note>
-  Currently returns up to ~9 results per request. For Brazil (PNCP), keyword filtering is applied on the tender description field. Higher volume and pagination are on the roadmap.
+  Currently returns up to 20 results per page. For Brazil (PNCP) and Mexico (ComprasMX), keyword filtering is applied client-side on the tender description field. Pagination is on the roadmap.
 </Note>
 
 <RequestExample>
@@ -69,6 +69,13 @@ curl -X POST https://api.enrichlatam.com/v1/tenders/search \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"keyword": "desenvolvimento software", "country": "BR"}'
+```
+
+```bash Mexico
+curl -X POST https://api.enrichlatam.com/v1/tenders/search \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "servicios tecnología", "country": "MX"}'
 ```
 
 ```python Python

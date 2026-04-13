@@ -1,0 +1,234 @@
+---
+title: "Licitaciones públicas via API: Chile, Brasil y México"
+description: "Cómo acceder programáticamente a licitaciones y contratos públicos de gobiernos latinoamericanos — Mercado Público (CL), PNCP (BR) y ComprasMX (MX)."
+---
+
+Los gobiernos de América Latina publican miles de licitaciones cada mes a través de sistemas oficiales de contratación pública. Esta información es valiosa para:
+
+- **Sales intelligence**: saber qué empresas están ganando contratos con el Estado
+- **Prospecting**: identificar nuevas oportunidades de venta en el sector público
+- **Due diligence**: verificar el historial de contratación de un proveedor
+- **Market research**: analizar el gasto público por sector o región
+
+Esta guía muestra cómo acceder a esta data programáticamente para Chile, Brasil y México.
+
+---
+
+## Fuentes oficiales por país
+
+| País | Sistema | API | Cobertura |
+|------|---------|-----|-----------|
+| Chile 🇨🇱 | Mercado Público | REST (requiere ticket) | Licitaciones + contratos adjudicados |
+| Brasil 🇧🇷 | PNCP | REST pública, sin auth | Contratos federales desde 2017 |
+| México 🇲🇽 | ComprasMX (OCDS) | REST pública, sin auth | APF federal desde 2017 |
+
+Los tres sistemas son de acceso público. EnrichLATAM los unifica en una sola API con formato consistente.
+
+---
+
+## Caso de uso: contratos donde una empresa es proveedora
+
+Dado el RUT, CNPJ o RFC de una empresa, obtener todos sus contratos con el gobierno:
+
+```python
+import requests
+
+API_KEY = "your_api_key"
+BASE_URL = "https://api.enrichlatam.com"
+
+def contratos_empresa(tax_id: str, country: str) -> dict:
+    """
+    Retorna contratos gubernamentales donde la empresa es proveedora.
+    
+    Args:
+        tax_id: RUT (CL), CNPJ (BR) o RFC (MX)
+        country: "CL", "BR" o "MX"
+    """
+    response = requests.post(
+        f"{BASE_URL}/v1/tenders",
+        headers={"X-API-Key": API_KEY},
+        json={"rut": tax_id, "country": country},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+# Chile — por RUT
+cl = contratos_empresa("77.261.280-K", "CL")
+print(f"Chile: {cl['total_orders']} contratos — fuente: {cl['source']}")
+
+# Brasil — por CNPJ
+br = contratos_empresa("28.591.276/0001-00", "BR")
+print(f"Brasil: {br['total_orders']} contratos — fuente: {br['source']}")
+
+# México — por RFC
+mx = contratos_empresa("EMP123456ABC", "MX")
+print(f"México: {mx['total_orders']} contratos — fuente: {mx['source']}")
+```
+
+**Respuesta Chile (Mercado Público):**
+
+```json
+{
+  "rut": "77.261.280-K",
+  "total_orders": 12,
+  "orders": [
+    {
+      "code": "1003473-1501-SE26",
+      "name": "Servicio de mantención infraestructura TI",
+      "status": "vigente"
+    },
+    {
+      "code": "2755-2-LP26",
+      "name": "Adquisición equipos computacionales",
+      "status": "adjudicada"
+    }
+  ],
+  "source": "mercadopublico"
+}
+```
+
+---
+
+## Caso de uso: contratos adjudicados (Chile)
+
+Para Chile, el endpoint `/tenders/awarded` devuelve los contratos ganados incluyendo montos y entidad compradora:
+
+```python
+def contratos_adjudicados_cl(rut: str) -> dict:
+    response = requests.post(
+        f"{BASE_URL}/v1/tenders/awarded",
+        headers={"X-API-Key": API_KEY},
+        json={"rut": rut},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+adjudicados = contratos_adjudicados_cl("77.261.280-K")
+for c in adjudicados["contracts"]:
+    print(f"{c['name']}: ${c['amount']:,.0f} {c['currency']} — {c['buyer']}")
+```
+
+```json
+{
+  "rut": "77.261.280-K",
+  "total": 3,
+  "contracts": [
+    {
+      "code": "2755-2-LP26",
+      "name": "Mantención sistemas TI",
+      "amount": 15000000.0,
+      "currency": "CLP",
+      "awarded_at": "2026-03-15T00:00:00",
+      "buyer": "Ministerio de Salud",
+      "buyer_rut": "61.002.001-3"
+    }
+  ],
+  "source": "mercadopublico"
+}
+```
+
+---
+
+## Caso de uso: buscar licitaciones activas por keyword
+
+Para encontrar licitaciones abiertas en cualquiera de los tres países:
+
+```python
+def buscar_licitaciones(keyword: str, country: str) -> dict:
+    response = requests.post(
+        f"{BASE_URL}/v1/tenders/search",
+        headers={"X-API-Key": API_KEY},
+        json={"keyword": keyword, "country": country},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+# Buscar licitaciones de software en Chile
+resultados = buscar_licitaciones("desarrollo software", "CL")
+for t in resultados["results"]:
+    print(f"[{t['code']}] {t['name']} — cierra: {t['closes_at']}")
+
+# Buscar en México
+mx = buscar_licitaciones("consultoría tecnología", "MX")
+print(f"México: {mx['total']} resultados")
+```
+
+---
+
+## Caso de uso: pipeline de sales intelligence
+
+Combinar contratos gubernamentales con datos de empresa para enriquecer un CRM:
+
+```python
+def enriquecer_proveedor(rut: str) -> dict:
+    """Obtiene perfil completo de empresa + historial de contratos."""
+    
+    # Datos de empresa
+    empresa = requests.post(
+        f"{BASE_URL}/v1/enrich",
+        headers={"X-API-Key": API_KEY},
+        json={"identifier": rut, "country": "CL"},
+    ).json()
+
+    # Contratos gubernamentales
+    contratos = requests.post(
+        f"{BASE_URL}/v1/tenders",
+        headers={"X-API-Key": API_KEY},
+        json={"rut": rut, "country": "CL"},
+    ).json()
+
+    return {
+        "company_name": empresa.get("company_name"),
+        "status": empresa.get("status"),
+        "activity": empresa.get("activity"),
+        "total_government_contracts": contratos.get("total_orders", 0),
+        "recent_contracts": contratos.get("orders", [])[:3],
+    }
+
+
+perfil = enriquecer_proveedor("77.261.280-K")
+print(perfil)
+```
+
+---
+
+## Notas técnicas
+
+### Mercado Público (Chile)
+- Requiere `MERCADOPUBLICO_TICKET` — ticket de integración gratuito, solicitarlo en mercadopublico.cl
+- Datos actualizados en tiempo real
+- Cubre licitaciones, órdenes de compra y convenios marco
+
+### PNCP (Brasil)
+- Sin autenticación, API REST pública en `pncp.gov.br`
+- Cubre contratos de la Administración Pública Federal
+- Formato: contratos activos e histórico
+
+### ComprasMX (México)
+- Sin autenticación, formato OCDS estándar
+- API en `api.datos.gob.mx/v2/contratacionesabiertas`
+- Cubre APF federal desde 2017
+- Licencia: Decreto de Datos Abiertos 2015 (uso comercial permitido con atribución)
+
+---
+
+## Atribución de fuentes
+
+| Fuente | País | Licencia |
+|--------|------|---------|
+| Mercado Público (mercadopublico.cl) | Chile 🇨🇱 | Datos públicos — Ley 20.285 |
+| PNCP (pncp.gov.br) | Brasil 🇧🇷 | CC BY-ND 3.0 |
+| ComprasMX OCDS (api.datos.gob.mx) | México 🇲🇽 | Decreto Datos Abiertos 2015 |
+
+---
+
+## Recursos
+
+- [Módulo Tenders — documentación completa](/modules/tenders)
+- [POST /v1/tenders](/api-reference/tenders)
+- [POST /v1/tenders/search](/api-reference/tenders-search)
+- [POST /v1/tenders/awarded](/api-reference/tenders-awarded)
+- [Quickstart](/quickstart)

@@ -10,7 +10,7 @@ description: "Get public tenders for a company by tax ID or domain."
 ## Request body
 
 <ParamField body="rut" type="string">
-  Company tax ID — RUT (Chile, e.g. `77.261.280-K`) or CNPJ (Brazil, e.g. `28.591.276/0001-00`). One of `rut` or `domain` is required.
+  Company tax ID — RUT (Chile, e.g. `77.261.280-K`), CNPJ (Brazil, e.g. `28.591.276/0001-00`), or RFC (Mexico, e.g. `EMP123456ABC`). One of `rut` or `domain` is required.
 </ParamField>
 
 <ParamField body="domain" type="string">
@@ -18,7 +18,7 @@ description: "Get public tenders for a company by tax ID or domain."
 </ParamField>
 
 <ParamField body="country" type="string" required>
-  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`.
+  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`, `MX`.
 </ParamField>
 
 ## Response
@@ -67,7 +67,7 @@ description: "Get public tenders for a company by tax ID or domain."
 </ResponseField>
 
 <ResponseField name="source" type="string">
-  Data source: `mercadopublico` for Chile, `pncp` for Brazil.
+  Data source: `mercadopublico` for Chile, `pncp` for Brazil, `comprasmx` for Mexico.
 </ResponseField>
 
 <ResponseField name="timestamp" type="string">
@@ -88,6 +88,13 @@ curl -X POST https://api.enrichlatam.com/v1/tenders \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"rut": "28.591.276/0001-00", "country": "BR"}'
+```
+
+```bash Mexico
+curl -X POST https://api.enrichlatam.com/v1/tenders \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"rut": "EMP123456ABC", "country": "MX"}'
 ```
 
 ```python Python
@@ -134,6 +141,22 @@ print(r.json())
   ],
   "source": "pncp",
   "timestamp": "2026-04-05T10:00:00Z"
+}
+```
+
+```json 200 Mexico
+{
+  "rut": "EMP123456ABC",
+  "total_orders": 1,
+  "orders": [
+    {
+      "code": "ocds-14i7x1-12345678",
+      "name": "Adquisición de equipos de cómputo",
+      "status": "active"
+    }
+  ],
+  "source": "comprasmx",
+  "timestamp": "2026-04-13T10:00:00Z"
 }
 ```
 

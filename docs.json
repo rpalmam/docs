@@ -29,6 +29,14 @@
               "modules/tenders",
               "modules/validate"
             ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/validate-rut-python",
+              "guides/cnpj-api",
+              "guides/licitaciones-api"
+            ]
           }
         ]
       },

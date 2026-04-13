@@ -1,0 +1,217 @@
+---
+title: "CNPJ API 2026: cómo consultar datos de empresas brasileñas"
+description: "Guía práctica para acceder a datos de empresas brasileñas por CNPJ — validación, fuentes gratuitas, y cómo obtener nombre, estado, actividad y socios con una API."
+---
+
+El CNPJ (Cadastro Nacional da Pessoa Jurídica) es el identificador fiscal de empresas en Brasil. Con más de 55 millones de empresas registradas, Brasil es el mercado B2B más grande de América Latina.
+
+Esta guía cubre:
+1. Estructura y validación del CNPJ
+2. Fuentes de datos oficiales disponibles en 2026
+3. Cómo consultar datos de empresa con la API de EnrichLATAM
+
+---
+
+## Estructura del CNPJ
+
+Un CNPJ tiene el formato `XX.XXX.XXX/XXXX-DD`, donde:
+- Los primeros 8 dígitos identifican la empresa matriz
+- Los 4 dígitos siguientes identifican el establecimiento (filial)
+- Los últimos 2 son dígitos verificadores
+
+Ejemplo: `11.222.333/0001-81`
+
+El sufijo `/0001` indica la sede central. Una empresa puede tener múltiples CNPJs para distintas sucursales (`/0002`, `/0003`, etc.).
+
+---
+
+## 1. Validar el CNPJ en Python
+
+```python
+import re
+
+def validar_cnpj(cnpj: str) -> bool:
+    """Valida formato y dígitos verificadores de un CNPJ brasileño."""
+    # Extraer solo dígitos
+    digits = re.sub(r"\D", "", cnpj)
+
+    if len(digits) != 14:
+        return False
+
+    # Rechazar CNPJs con todos los dígitos iguales
+    if len(set(digits)) == 1:
+        return False
+
+    def calc_dv(digits: str, length: int) -> int:
+        weights = list(range(length + 1, 1, -1))
+        total = sum(int(d) * w for d, w in zip(digits[:length], weights))
+        remainder = total % 11
+        return 0 if remainder < 2 else 11 - remainder
+
+    dv1 = calc_dv(digits, 12)
+    dv2 = calc_dv(digits, 13)
+
+    return int(digits[12]) == dv1 and int(digits[13]) == dv2
+
+
+print(validar_cnpj("11.222.333/0001-81"))  # True
+print(validar_cnpj("00.000.000/0000-00"))  # False
+print(validar_cnpj("11222333000181"))       # True
+```
+
+---
+
+## 2. Normalizar el formato
+
+```python
+def normalizar_cnpj(cnpj: str) -> str | None:
+    """
+    Normaliza un CNPJ al formato estándar XX.XXX.XXX/XXXX-DD.
+    Retorna None si el CNPJ es inválido.
+    """
+    digits = re.sub(r"\D", "", cnpj.strip())
+
+    if not validar_cnpj(digits):
+        return None
+
+    return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
+
+
+print(normalizar_cnpj("11222333000181"))       # 11.222.333/0001-81
+print(normalizar_cnpj("11.222.333/0001-81"))   # 11.222.333/0001-81
+```
+
+---
+
+## 3. Fuentes de datos oficiales en 2026
+
+| Fuente | Tipo | Costo | Cobertura |
+|--------|------|-------|-----------|
+| **Receita Federal (OpenCNPJ)** | API REST pública | Gratuito | 55M+ empresas, datos completos |
+| **Junta Comercial (JUCESP, etc.)** | Portal web por estado | Gratuito (consulta) | Actos societarios, socios |
+| **PNCP** | API REST OCDS | Gratuito | Contratos federales desde 2017 |
+
+**OpenCNPJ** (`https://open.cnpj.ws`) es la fuente más completa: nombre, situação cadastral, data de abertura, atividade econômica (CNAE), natureza jurídica, endereço, quadro de sócios y administradores (QSA).
+
+---
+
+## 4. Consultar datos de empresa con la API
+
+EnrichLATAM conecta con la Receita Federal y expone los datos en un formato consistente, igual al que usas para Chile:
+
+```python
+import requests
+
+API_KEY = "your_api_key"
+
+def enrich_empresa_br(cnpj: str) -> dict:
+    """Obtiene datos de empresa brasileña por CNPJ usando EnrichLATAM."""
+    response = requests.post(
+        "https://api.enrichlatam.com/v1/enrich",
+        headers={"X-API-Key": API_KEY},
+        json={"identifier": cnpj, "country": "BR"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+cnpj = "11.222.333/0001-81"
+if validar_cnpj(cnpj):
+    datos = enrich_empresa_br(cnpj)
+    print(datos["company_name"])    # Razão social
+    print(datos["status"])          # active / inactive / suspended
+    print(datos["activity"])        # Atividade econômica principal (CNAE)
+```
+
+**Respuesta de ejemplo:**
+
+```json
+{
+  "country": "BR",
+  "identifier": "11.222.333/0001-81",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "trade_name": "Exemplo",
+  "status": "active",
+  "activity": "Desenvolvimento de programas de computador sob encomenda",
+  "cnae_code": "6201-5/01",
+  "legal_nature": "Sociedade Empresária Limitada",
+  "address": {
+    "street": "Rua das Flores, 123",
+    "neighborhood": "Centro",
+    "city": "São Paulo",
+    "state": "SP",
+    "zip_code": "01310-100"
+  },
+  "founded_date": "2010-03-15",
+  "capital": 100000.0,
+  "source": "receita_federal",
+  "data_as_of": "2026-04-01"
+}
+```
+
+---
+
+## 5. KYB — Verificación empresarial
+
+Para casos de compliance o onboarding B2B, usa el endpoint `/v1/kyb` que retorna el subconjunto de datos relevante para verificación:
+
+```python
+def kyb_empresa_br(cnpj: str) -> dict:
+    response = requests.post(
+        "https://api.enrichlatam.com/v1/kyb",
+        headers={"X-API-Key": API_KEY},
+        json={"identifier": cnpj, "country": "BR"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+resultado = kyb_empresa_br("11.222.333/0001-81")
+print(resultado["verified"])       # True / False
+print(resultado["status"])         # active
+print(resultado["legal_name"])     # Nombre registrado
+```
+
+---
+
+## 6. Verificar contratos con el gobierno
+
+Para saber si una empresa tiene contratos con el gobierno federal brasileño:
+
+```python
+def contratos_gobierno_br(cnpj: str) -> dict:
+    response = requests.post(
+        "https://api.enrichlatam.com/v1/tenders",
+        headers={"X-API-Key": API_KEY},
+        json={"rut": cnpj, "country": "BR"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+contratos = contratos_gobierno_br("28.591.276/0001-00")
+print(f"Total contratos: {contratos['total_orders']}")
+for c in contratos["orders"]:
+    print(f"  {c['code']} — {c['name']}")
+```
+
+---
+
+## Diferencias clave Brasil vs. Chile
+
+| Aspecto | Brasil 🇧🇷 | Chile 🇨🇱 |
+|---------|-----------|---------|
+| Identificador | CNPJ (14 dígitos) | RUT (8 dígitos + DV) |
+| Dígitos verificadores | 2 | 1 (`0`–`9` o `K`) |
+| Empresas registradas | ~55 millones | ~2 millones |
+| Filiales | CNPJ separado por sucursal | Mismo RUT |
+| API oficial gratuita | OpenCNPJ (Receita Federal) | Archivo masivo SII |
+
+---
+
+## Recursos
+
+- [Documentación `/v1/enrich`](/api-reference/enrich)
+- [Documentación `/v1/kyb`](/api-reference/kyb)
+- [Documentación `/v1/tenders`](/api-reference/tenders)
+- [Quickstart](/quickstart)
