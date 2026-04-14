@@ -18,7 +18,7 @@ description: "Get public tenders for a company by tax ID or domain."
 </ParamField>
 
 <ParamField body="country" type="string" required>
-  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`, `MX`.
+  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`, `MX`, `CO`.
 </ParamField>
 
 ## Response
@@ -67,7 +67,7 @@ description: "Get public tenders for a company by tax ID or domain."
 </ResponseField>
 
 <ResponseField name="source" type="string">
-  Data source: `mercadopublico` for Chile, `pncp` for Brazil, `comprasmx` for Mexico.
+  Data source: `mercadopublico` for Chile, `pncp` for Brazil, `comprasmx` for Mexico, `secopii` for Colombia.
 </ResponseField>
 
 <ResponseField name="timestamp" type="string">
@@ -94,7 +94,14 @@ curl -X POST https://api.enrichlatam.com/v1/tenders \
 curl -X POST https://api.enrichlatam.com/v1/tenders \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"rut": "EMP123456ABC", "country": "MX"}'
+  -d '{"identifier": "EMP123456ABC", "country": "MX"}'
+```
+
+```bash Colombia
+curl -X POST https://api.enrichlatam.com/v1/tenders \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "900123456-1", "country": "CO"}'
 ```
 
 ```python Python
@@ -146,7 +153,7 @@ print(r.json())
 
 ```json 200 Mexico
 {
-  "rut": "EMP123456ABC",
+  "identifier": "EMP123456ABC",
   "total_orders": 1,
   "orders": [
     {
@@ -156,6 +163,22 @@ print(r.json())
     }
   ],
   "source": "comprasmx",
+  "timestamp": "2026-04-13T10:00:00Z"
+}
+```
+
+```json 200 Colombia
+{
+  "identifier": "900123456-1",
+  "total_orders": 2,
+  "orders": [
+    {
+      "code": "CO1.BDOS.123456",
+      "name": "Adquisición de equipos de cómputo",
+      "status": "Celebrado"
+    }
+  ],
+  "source": "secopii",
   "timestamp": "2026-04-13T10:00:00Z"
 }
 ```
