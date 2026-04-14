@@ -29,7 +29,8 @@
               "modules/tech",
               "modules/tenders",
               "modules/validate",
-              "modules/monitor"
+              "modules/monitor",
+              "modules/sanctions"
             ]
           },
           {
@@ -81,6 +82,12 @@
             "group": "Monitor",
             "pages": [
               "api-reference/monitor"
+            ]
+          },
+          {
+            "group": "Sanctions",
+            "pages": [
+              "api-reference/sanctions"
             ]
           }
         ]

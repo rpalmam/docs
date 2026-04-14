@@ -1,0 +1,158 @@
+---
+title: Sanctions Check
+description: Check if a company appears on international sanctions lists (OFAC, UN) using its tax identifier.
+---
+
+The Sanctions module checks whether a company's tax identifier (RUT or CNPJ) appears on major international sanctions lists, including OFAC SDN and the UN Security Council Consolidated List.
+
+<Note>
+  Matching is **identifier-first and exact only**. If the RUT or CNPJ does not appear in a sanctions list, `is_sanctioned` returns `false`. No fuzzy name matching is performed — this eliminates false positives by design.
+</Note>
+
+## What it returns
+
+For a given tax identifier, the API returns:
+
+- Whether the company appears on any sanctions list (`is_sanctioned`)
+- Full match details: list name, sanctioned entity name, programs, and matched ID value
+- Which lists were checked and when they were last updated
+
+## Supported lists
+
+| List | Issuer | Coverage |
+|------|--------|----------|
+| SDN — Specially Designated Nationals | OFAC (US Treasury) | Global — primary list for LATAM entities |
+| Consolidated Sanctions List | UN Security Council | Global — Al-Qaida, Taliban, DPRK, and others |
+
+Lists are downloaded at server startup and refreshed every 24 hours automatically.
+
+## Supported countries
+
+| Country | Identifier | Notes |
+|---------|-----------|-------|
+| Chile 🇨🇱 | RUT (e.g. `76354771-K`) | Business entities only — personal RUTs blocked |
+| Brazil 🇧🇷 | CNPJ (e.g. `12.345.678/0001-90`) | Business entities only — MEIs blocked |
+
+## Request
+
+```bash
+POST /v1/sanctions
+```
+
+```json
+{
+  "identifier": "76354771-K",
+  "country": "CL"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | ✅ | Company tax ID. RUT for Chile, CNPJ for Brazil. Formatting optional. |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`. |
+
+## Response
+
+<CodeGroup>
+
+```json Not sanctioned
+{
+  "identifier": "76354771-K",
+  "country": "CL",
+  "is_sanctioned": false,
+  "matches": [],
+  "lists_checked": ["OFAC_SDN", "UN_CONSOLIDATED"],
+  "lists_updated_at": {
+    "OFAC_SDN": "2026-04-14T08:00:00+00:00",
+    "UN_CONSOLIDATED": "2026-04-14T08:00:05+00:00"
+  },
+  "checked_at": "2026-04-14T12:00:00+00:00"
+}
+```
+
+```json Sanctioned (match found)
+{
+  "identifier": "76.999.999-K",
+  "country": "CL",
+  "is_sanctioned": true,
+  "matches": [
+    {
+      "list_name": "OFAC_SDN",
+      "entry_name": "EMPRESA EJEMPLO LTDA",
+      "programs": ["SDNTK"],
+      "matched_id_type": "RUT",
+      "matched_id_value": "76.999.999-K",
+      "uid": "12345"
+    }
+  ],
+  "lists_checked": ["OFAC_SDN", "UN_CONSOLIDATED"],
+  "lists_updated_at": {
+    "OFAC_SDN": "2026-04-14T08:00:00+00:00",
+    "UN_CONSOLIDATED": "2026-04-14T08:00:05+00:00"
+  },
+  "checked_at": "2026-04-14T12:00:00+00:00"
+}
+```
+
+</CodeGroup>
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | The queried tax identifier |
+| `country` | string | Country code |
+| `is_sanctioned` | boolean | `true` only on exact identifier match |
+| `matches` | array | List of matches (empty if not sanctioned) |
+| `matches[].list_name` | string | `OFAC_SDN` or `UN_CONSOLIDATED` |
+| `matches[].entry_name` | string | Name of the sanctioned entity as it appears in the list |
+| `matches[].programs` | array | Sanctions programs (e.g. `["SDNTK"]`) |
+| `matches[].matched_id_type` | string | ID type matched (e.g. `"RUT"`, `"CNPJ"`) |
+| `matches[].matched_id_value` | string | Original identifier value from the list |
+| `matches[].uid` | string | List-specific unique entry ID |
+| `lists_checked` | array | Names of all lists checked |
+| `lists_updated_at` | object | ISO datetime of last refresh per list, or `null` if unavailable |
+| `checked_at` | string | ISO datetime of this specific check |
+
+## Matching logic
+
+The API normalizes both the input identifier and the identifiers stored in the sanctions lists before comparing:
+
+1. Strips dots, hyphens, slashes, and spaces
+2. Uppercases the result
+3. Compares exactly
+
+Example: `76.354.771-K`, `76354771-K`, and `76354771K` all normalize to `76354771K` and will match against each other.
+
+## Important disclaimer
+
+<Warning>
+  A result of `is_sanctioned: false` means the identifier was not found in the checked lists. It does **not** constitute a comprehensive AML clearance. Your compliance program should define when and how to use this check as part of a broader due diligence process.
+</Warning>
+
+## Data freshness
+
+Lists are refreshed every 24 hours. The `lists_updated_at` field in every response shows the exact datetime of the last successful refresh per list. If a list failed to load (network issue), its value will be `null` — you should treat that list as unchecked.
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `422` | Invalid or malformed identifier |
+| `422` | Personal RUT or Brazilian MEI — not supported |
+| `422` | Country not supported |
+| `403` | Missing API key or module not in plan |
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Sanctions | $49/month | 500 checks |
+| Overage | — | $0.10 per extra check |
+| Pay-as-you-go | — | $0.15 per check |
+
+<Card title="API Reference" icon="terminal" href="/api-reference/sanctions">
+  Full request/response schema with interactive examples.
+</Card>
