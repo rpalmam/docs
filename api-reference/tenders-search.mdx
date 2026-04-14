@@ -19,36 +19,23 @@ description: "Search active public tenders by keyword."
 
 ## Response
 
-<ResponseField name="keyword" type="string">
-  The search term used.
-</ResponseField>
-
-<ResponseField name="tenders" type="array">
-  List of matching tender objects (same structure as `/v1/tenders`).
-
-  <Expandable title="Tender object fields">
-    <ResponseField name="id" type="string">Tender ID.</ResponseField>
-    <ResponseField name="name" type="string">Tender title.</ResponseField>
-    <ResponseField name="organization" type="string">Buying organization name.</ResponseField>
-    <ResponseField name="status" type="string">Current tender status.</ResponseField>
-    <ResponseField name="amount" type="number">Estimated amount.</ResponseField>
-    <ResponseField name="currency" type="string">Currency code.</ResponseField>
-    <ResponseField name="published_at" type="string">Publication date.</ResponseField>
-    <ResponseField name="closing_at" type="string">Closing deadline.</ResponseField>
-    <ResponseField name="url" type="string">Official tender URL.</ResponseField>
-  </Expandable>
-</ResponseField>
-
 <ResponseField name="total" type="integer">
   Number of results returned.
 </ResponseField>
 
-<ResponseField name="source" type="string">
-  Data source.
+<ResponseField name="results" type="array">
+  List of matching tender objects.
+
+  <Expandable title="Tender object fields">
+    <ResponseField name="code" type="string">Tender or process code from the source system.</ResponseField>
+    <ResponseField name="name" type="string">Tender title/description.</ResponseField>
+    <ResponseField name="status" type="string">Current tender status (varies by country).</ResponseField>
+    <ResponseField name="closes_at" type="string">Closing deadline. `null` if unavailable.</ResponseField>
+  </Expandable>
 </ResponseField>
 
-<ResponseField name="timestamp" type="string">
-  ISO 8601 response timestamp.
+<ResponseField name="source" type="string">
+  Data source: `mercadopublico` (CL), `pncp` (BR), `comprasmx` (MX), `secopii` (CO).
 </ResponseField>
 
 <Note>
@@ -102,45 +89,31 @@ print(r.json())
 
 ```json 200 Chile
 {
-  "keyword": "software desarrollo",
-  "tenders": [
+  "total": 1,
+  "results": [
     {
-      "id": "2312-45-LP24",
+      "code": "2312-45-LP24",
       "name": "Desarrollo de software de gestión municipal",
-      "organization": "Municipalidad de Temuco",
       "status": "Publicada",
-      "amount": 45000000,
-      "currency": "CLP",
-      "published_at": "2024-11-10",
-      "closing_at": "2024-12-05",
-      "url": "https://www.mercadopublico.cl/Licitacion/Index/2312-45-LP24"
+      "closes_at": "2026-04-16T13:00:00"
     }
   ],
-  "total": 1,
-  "source": "mercadopublico",
-  "timestamp": "2026-04-05T10:00:00Z"
+  "source": "mercadopublico"
 }
 ```
 
 ```json 200 Brazil
 {
-  "keyword": "desenvolvimento software",
-  "tenders": [
+  "total": 1,
+  "results": [
     {
-      "id": "90001/2026",
+      "code": "01610566000106-1-000039/2024",
       "name": "Contratação de serviços de desenvolvimento de software",
-      "organization": "Ministério da Saúde",
-      "status": "Publicada",
-      "amount": 250000,
-      "currency": "BRL",
-      "published_at": "2026-03-20",
-      "closing_at": "2026-04-20",
-      "url": "https://pncp.gov.br/app/editais/90001-2026"
+      "status": "Divulgada no PNCP",
+      "closes_at": "2026-06-30T14:00:00"
     }
   ],
-  "total": 1,
-  "source": "pncp",
-  "timestamp": "2026-04-05T10:00:00Z"
+  "source": "pncp"
 }
 ```
 

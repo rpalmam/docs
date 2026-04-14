@@ -1,0 +1,194 @@
+---
+title: "Monitor — Subscriptions"
+description: "Register companies for change monitoring and receive webhooks when their status, size, or activity changes."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `monitor` module.
+</ParamField>
+
+---
+
+## POST /v1/monitor/subscriptions
+
+Register a list of company identifiers for monitoring. A webhook is sent to your `webhook_url` whenever a company's `status`, `size`, or `activity` changes.
+
+### Request body
+
+<ParamField body="identifiers" type="array" required>
+  List of company tax IDs to monitor. RUTs for Chile, CNPJs for Brazil. Maximum 500 per subscription.
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  Country of the identifiers. Supported: `CL`, `BR`.
+</ParamField>
+
+<ParamField body="webhook_url" type="string" required>
+  HTTPS URL that will receive a POST request when a change is detected.
+</ParamField>
+
+### Response
+
+<ResponseField name="subscription_id" type="string">
+  Unique identifier for this subscription. Use it to list or cancel.
+</ResponseField>
+
+<ResponseField name="identifiers" type="array">
+  The registered identifiers.
+</ResponseField>
+
+<ResponseField name="country" type="string">
+  Country code.
+</ResponseField>
+
+<ResponseField name="webhook_url" type="string">
+  The registered webhook URL.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Subscription status: `active`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/monitor/subscriptions \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifiers": ["76.354.771-K", "77.261.280-K"],
+    "country": "CL",
+    "webhook_url": "https://yourapp.com/webhooks/enrichlatam"
+  }'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/monitor/subscriptions",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={
+        "identifiers": ["76.354.771-K", "77.261.280-K"],
+        "country": "CL",
+        "webhook_url": "https://yourapp.com/webhooks/enrichlatam",
+    },
+)
+print(r.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 201 Created
+{
+  "subscription_id": "sub_a1b2c3d4",
+  "identifiers": ["76.354.771-K", "77.261.280-K"],
+  "country": "CL",
+  "webhook_url": "https://yourapp.com/webhooks/enrichlatam",
+  "status": "active",
+  "created_at": "2026-04-13T10:00:00Z"
+}
+```
+
+```json 422 Empty identifiers
+{
+  "detail": "'identifiers' must not be empty."
+}
+```
+
+</ResponseExample>
+
+---
+
+## GET /v1/monitor/subscriptions
+
+Returns all active subscriptions for your API key.
+
+<RequestExample>
+
+```bash cURL
+curl https://api.enrichlatam.com/v1/monitor/subscriptions \
+  -H "X-API-Key: YOUR_API_KEY"
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+[
+  {
+    "subscription_id": "sub_a1b2c3d4",
+    "identifiers": ["76.354.771-K", "77.261.280-K"],
+    "country": "CL",
+    "webhook_url": "https://yourapp.com/webhooks/enrichlatam",
+    "status": "active",
+    "created_at": "2026-04-13T10:00:00Z"
+  }
+]
+```
+
+</ResponseExample>
+
+---
+
+## DELETE /v1/monitor/subscriptions/{subscription\_id}
+
+Cancels a subscription. No further webhooks will be sent.
+
+<RequestExample>
+
+```bash cURL
+curl -X DELETE https://api.enrichlatam.com/v1/monitor/subscriptions/sub_a1b2c3d4 \
+  -H "X-API-Key: YOUR_API_KEY"
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "subscription_id": "sub_a1b2c3d4",
+  "status": "cancelled"
+}
+```
+
+```json 404
+{
+  "detail": "Subscription not found or already cancelled."
+}
+```
+
+</ResponseExample>
+
+---
+
+## Webhook payload
+
+When a change is detected, EnrichLATAM sends a `POST` to your `webhook_url` with the following body:
+
+```json
+{
+  "subscription_id": "sub_a1b2c3d4",
+  "identifier": "76.354.771-K",
+  "country": "CL",
+  "changed_fields": {
+    "status": {
+      "from": "active",
+      "to": "inactive"
+    }
+  },
+  "detected_at": "2026-04-13T10:00:00Z"
+}
+```
+
+<Note>
+  The monitor checks for changes every 6 hours. Fields monitored: `status`, `size`, `activity`. Supported countries: CL (via SII Capa A) and BR (via OpenCNPJ).
+</Note>

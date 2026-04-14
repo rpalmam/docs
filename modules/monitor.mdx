@@ -1,0 +1,92 @@
+---
+title: Monitor
+description: Register companies for change monitoring and receive webhooks when their data changes.
+---
+
+The Monitor module lets you track a portfolio of companies and receive automatic webhook notifications when their `status`, `size`, or `activity` changes. Useful for credit risk monitoring, compliance alerts, and CRM enrichment pipelines.
+
+## What it does
+
+- Monitors up to 500 companies per subscription
+- Checks for changes every 6 hours
+- Sends a `POST` webhook to your endpoint when a change is detected
+- Tracks: `status` (active/inactive), `size`, and `activity` (economic activity)
+
+## Supported countries
+
+| Country | Source | Identifier |
+|---------|--------|-----------|
+| Chile 🇨🇱 | SII (Capa A local) | RUT |
+| Brazil 🇧🇷 | OpenCNPJ (Receita Federal) | CNPJ |
+
+## Endpoints
+
+```bash
+POST   /v1/monitor/subscriptions          # Create subscription
+GET    /v1/monitor/subscriptions          # List active subscriptions
+DELETE /v1/monitor/subscriptions/{id}     # Cancel subscription
+```
+
+## Quick example
+
+```python Python
+import requests
+
+API_KEY = "YOUR_API_KEY"
+
+# Create subscription
+r = requests.post(
+    "https://api.enrichlatam.com/v1/monitor/subscriptions",
+    headers={"X-API-Key": API_KEY},
+    json={
+        "identifiers": ["76.354.771-K", "77.261.280-K"],
+        "country": "CL",
+        "webhook_url": "https://yourapp.com/webhooks/enrichlatam",
+    },
+)
+subscription = r.json()
+print(subscription["subscription_id"])
+
+# List subscriptions
+subs = requests.get(
+    "https://api.enrichlatam.com/v1/monitor/subscriptions",
+    headers={"X-API-Key": API_KEY},
+).json()
+
+# Cancel
+requests.delete(
+    f"https://api.enrichlatam.com/v1/monitor/subscriptions/{subscription['subscription_id']}",
+    headers={"X-API-Key": API_KEY},
+)
+```
+
+## Webhook payload
+
+When a change is detected, EnrichLATAM sends a `POST` to your `webhook_url`:
+
+```json
+{
+  "subscription_id": "sub_a1b2c3d4",
+  "identifier": "76.354.771-K",
+  "country": "CL",
+  "changed_fields": {
+    "status": {
+      "from": "active",
+      "to": "inactive"
+    }
+  },
+  "detected_at": "2026-04-13T10:00:00Z"
+}
+```
+
+Your endpoint must return `2xx` within 10 seconds. Failed deliveries are not retried in the current version.
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Monitor | $99/month | Up to 500 identifiers monitored |
+
+<Card title="API Reference — Monitor" icon="terminal" href="/api-reference/monitor">
+  Full endpoint documentation with request/response examples.
+</Card>

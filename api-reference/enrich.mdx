@@ -56,11 +56,11 @@ description: "Get structured firmographic data for a Latin American company."
 </ResponseField>
 
 <ResponseField name="tech_stack" type="array">
-  Detected technologies (coming soon — currently empty).
+  Detected technologies. Always `null` — use `/v1/tech` to query technology stack separately.
 </ResponseField>
 
 <ResponseField name="emails" type="array">
-  Verified contact emails (coming soon — currently empty).
+  Verified contact emails. Always `null` — coming in a future release.
 </ResponseField>
 
 <ResponseField name="country" type="string">
@@ -68,7 +68,11 @@ description: "Get structured firmographic data for a Latin American company."
 </ResponseField>
 
 <ResponseField name="source" type="string">
-  Data source identifier.
+  Data source identifier: `sii` (Chile, Capa A), `baseapi` (Chile, Capa B), `receita_federal` (Brazil).
+</ResponseField>
+
+<ResponseField name="data_as_of" type="string">
+  Date of the last registry sync (ISO 8601). Present when data is served from the local SII database (Capa A). `null` when data is fetched in real time.
 </ResponseField>
 
 <RequestExample>
@@ -114,10 +118,11 @@ print(r.json())
   "region": null,
   "founded_year": 2018,
   "status": "active",
-  "tech_stack": [],
-  "emails": [],
+  "tech_stack": null,
+  "emails": null,
   "country": "CL",
-  "source": "sii"
+  "source": "sii",
+  "data_as_of": "2026-04-01"
 }
 ```
 
@@ -133,10 +138,11 @@ print(r.json())
   "region": null,
   "founded_year": 2015,
   "status": "active",
-  "tech_stack": [],
-  "emails": [],
+  "tech_stack": null,
+  "emails": null,
   "country": "BR",
-  "source": "receita_federal"
+  "source": "receita_federal",
+  "data_as_of": null
 }
 ```
 

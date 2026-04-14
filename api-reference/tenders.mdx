@@ -9,12 +9,12 @@ description: "Get public tenders for a company by tax ID or domain."
 
 ## Request body
 
-<ParamField body="rut" type="string">
-  Company tax ID — RUT (Chile, e.g. `77.261.280-K`), CNPJ (Brazil, e.g. `28.591.276/0001-00`), or RFC (Mexico, e.g. `EMP123456ABC`). One of `rut` or `domain` is required.
+<ParamField body="identifier" type="string">
+  Company tax ID — RUT (Chile, e.g. `77.261.280-K`), CNPJ (Brazil, e.g. `28.591.276/0001-00`), RFC (Mexico, e.g. `EMP123456ABC`), or NIT (Colombia, e.g. `900123456-1`). One of `identifier` or `domain` is required.
 </ParamField>
 
 <ParamField body="domain" type="string">
-  Company domain (e.g. `empresa.com.br`). Resolved to tax ID automatically. One of `rut` or `domain` is required.
+  Company domain (e.g. `empresa.com.br`). Resolved to tax ID automatically. Supported for CL and BR only. One of `identifier` or `domain` is required.
 </ParamField>
 
 <ParamField body="country" type="string" required>
@@ -23,55 +23,32 @@ description: "Get public tenders for a company by tax ID or domain."
 
 ## Response
 
-<ResponseField name="rut" type="string">
-  The queried organization RUT.
+<ResponseField name="identifier" type="string">
+  The queried tax ID (RUT, CNPJ, RFC, or NIT).
 </ResponseField>
 
-<ResponseField name="organization" type="string">
-  Organization name.
+<ResponseField name="total_orders" type="integer">
+  Total number of contracts returned.
 </ResponseField>
 
-<ResponseField name="tenders" type="array">
-  List of tender objects.
+<ResponseField name="orders" type="array">
+  List of contract objects.
 
-  <Expandable title="Tender object fields">
-    <ResponseField name="id" type="string">
-      Tender ID from Mercado Público.
+  <Expandable title="Order object fields">
+    <ResponseField name="code" type="string">
+      Contract or process code from the source system.
     </ResponseField>
     <ResponseField name="name" type="string">
-      Tender title/description.
+      Contract title/description.
     </ResponseField>
     <ResponseField name="status" type="string">
-      Current tender status (e.g. `Publicada`, `Adjudicada`, `Desierta`).
-    </ResponseField>
-    <ResponseField name="amount" type="number">
-      Estimated amount in local currency.
-    </ResponseField>
-    <ResponseField name="currency" type="string">
-      Currency code (e.g. `CLP`).
-    </ResponseField>
-    <ResponseField name="published_at" type="string">
-      ISO date when the tender was published.
-    </ResponseField>
-    <ResponseField name="closing_at" type="string">
-      ISO date of tender closing deadline.
-    </ResponseField>
-    <ResponseField name="url" type="string">
-      Link to the official tender listing.
+      Current contract status (varies by country).
     </ResponseField>
   </Expandable>
 </ResponseField>
 
-<ResponseField name="total" type="integer">
-  Total number of tenders returned.
-</ResponseField>
-
 <ResponseField name="source" type="string">
-  Data source: `mercadopublico` for Chile, `pncp` for Brazil, `comprasmx` for Mexico, `secopii` for Colombia.
-</ResponseField>
-
-<ResponseField name="timestamp" type="string">
-  ISO 8601 response timestamp.
+  Data source: `mercadopublico` (CL), `pncp` (BR), `comprasmx` (MX), `secopii` (CO).
 </ResponseField>
 
 <RequestExample>
@@ -80,14 +57,14 @@ description: "Get public tenders for a company by tax ID or domain."
 curl -X POST https://api.enrichlatam.com/v1/tenders \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"rut": "77.261.280-K", "country": "CL"}'
+  -d '{"identifier": "77.261.280-K", "country": "CL"}'
 ```
 
 ```bash Brazil
 curl -X POST https://api.enrichlatam.com/v1/tenders \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"rut": "28.591.276/0001-00", "country": "BR"}'
+  -d '{"identifier": "28.591.276/0001-00", "country": "BR"}'
 ```
 
 ```bash Mexico
@@ -121,7 +98,7 @@ print(r.json())
 
 ```json 200 Chile
 {
-  "rut": "77.261.280-K",
+  "identifier": "77.261.280-K",
   "total_orders": 3,
   "orders": [
     {
@@ -130,24 +107,22 @@ print(r.json())
       "status": "vigente"
     }
   ],
-  "source": "mercadopublico",
-  "timestamp": "2026-04-05T10:00:00Z"
+  "source": "mercadopublico"
 }
 ```
 
 ```json 200 Brazil
 {
-  "rut": "28.591.276/0001-00",
+  "identifier": "28.591.276/0001-00",
   "total_orders": 2,
   "orders": [
     {
       "code": "90001/2026",
       "name": "Aquisição de equipamentos de TI",
-      "status": "vigente"
+      "status": "Contrato (termo inicial)"
     }
   ],
-  "source": "pncp",
-  "timestamp": "2026-04-05T10:00:00Z"
+  "source": "pncp"
 }
 ```
 

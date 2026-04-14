@@ -51,6 +51,10 @@ description: "Verify a company's legal registration status."
   Data source identifier. `sii` for Chile, `receita_federal` for Brazil.
 </ResponseField>
 
+<ResponseField name="data_as_of" type="string">
+  Date of the last registry sync (ISO 8601). Present when data is served from the local SII database (Capa A). `null` when data is fetched in real time.
+</ResponseField>
+
 <RequestExample>
 
 ```bash cURL
@@ -84,7 +88,8 @@ print(r.json())
   "verified": true,
   "founded_year": 2018,
   "end_date": null,
-  "source": "sii"
+  "source": "sii",
+  "data_as_of": "2026-04-01"
 }
 ```
 
