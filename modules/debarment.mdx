@@ -1,0 +1,164 @@
+---
+title: Debarment Check
+description: Check if a Brazilian company is debarred from government contracts using CEIS and CNEP registries from the Portal da Transparência.
+---
+
+The Debarment module checks whether a company's CNPJ appears on Brazil's official registries of companies suspended or penalized from participating in government contracts.
+
+<Note>
+  A result of `is_debarred: false` means no records were found in the checked registries. It does **not** guarantee the company is eligible for all government contracts — additional internal checks may apply.
+</Note>
+
+## What it returns
+
+For a given CNPJ, the API returns:
+
+- Whether the company has any debarment records (`is_debarred`)
+- Full record details: source registry, sanction type, sanctioning body, dates, and fine amount (when applicable)
+- Which registries were checked
+
+## Supported registries
+
+| Registry | Source | Description |
+|----------|--------|-------------|
+| CEIS | Portal da Transparência (CGU) | Companies suspended or deemed unfit for government contracts |
+| CNEP | Portal da Transparência (CGU) | Companies fined under Brazil's Anti-Corruption Law (Lei 12.846/2013) |
+
+Data is fetched live from the Portal da Transparência API on each request and cached for 24 hours.
+
+## Supported countries
+
+| Country | Identifier | Notes |
+|---------|-----------|-------|
+| Brazil 🇧🇷 | CNPJ (e.g. `12.345.678/0001-90`) | Business entities only — MEIs blocked |
+
+<Note>
+  Chile support is coming soon. If you need debarment checks for Chilean companies (CEIS equivalent), contact [team@enrichlatam.com](mailto:team@enrichlatam.com).
+</Note>
+
+## Request
+
+```bash
+POST /v1/debarment
+```
+
+```json
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | ✅ | Company CNPJ. Formatting optional. |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Supported: `BR`. |
+
+## Response
+
+<CodeGroup>
+
+```json Not debarred
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR",
+  "is_debarred": false,
+  "records": [],
+  "sources_checked": ["CEIS", "CNEP"],
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+```json Debarred (records found)
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR",
+  "is_debarred": true,
+  "records": [
+    {
+      "source": "CEIS",
+      "sanction_type": "SUSPENSÃO",
+      "sanctioning_body": "TCU",
+      "date_start": "2024-01-15",
+      "date_end": "2026-01-15",
+      "process_id": "TC-012345/2023-8",
+      "fine_amount": null
+    },
+    {
+      "source": "CNEP",
+      "sanction_type": "MULTA",
+      "sanctioning_body": "CGU",
+      "date_start": "2023-06-01",
+      "date_end": null,
+      "process_id": "00190.000123/2023-01",
+      "fine_amount": 250000.00
+    }
+  ],
+  "sources_checked": ["CEIS", "CNEP"],
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+</CodeGroup>
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | The queried CNPJ |
+| `country` | string | Country code |
+| `is_debarred` | boolean | `true` if any records were found in CEIS or CNEP |
+| `records` | array | List of debarment records (empty if not debarred) |
+| `records[].source` | string | Registry: `CEIS` or `CNEP` |
+| `records[].sanction_type` | string | Type of sanction (e.g. `SUSPENSÃO`, `INIDONEIDADE`, `MULTA`) |
+| `records[].sanctioning_body` | string | Body that issued the sanction (e.g. `TCU`, `CGU`) |
+| `records[].date_start` | string \| null | ISO date when the sanction began |
+| `records[].date_end` | string \| null | ISO date when it ends, or `null` if indefinite |
+| `records[].process_id` | string \| null | Administrative process number |
+| `records[].fine_amount` | number \| null | Fine in BRL — only present in CNEP records |
+| `sources_checked` | array | Registries checked: `["CEIS", "CNEP"]` |
+| `checked_at` | string | ISO datetime of this specific check |
+
+## Use cases
+
+- **Pre-contract due diligence** — verify a supplier before onboarding
+- **AML / compliance workflows** — combine with `/sanctions` for a complete risk check
+- **Procurement platforms** — screen vendors automatically at bid submission
+- **Factoring and credit** — assess counterparty risk before financing invoices
+
+## Bundle with Sanctions
+
+For a complete AML and compliance workflow, use Debarment together with `/sanctions`:
+
+- `/sanctions` — checks OFAC SDN + UN Consolidated (international sanctions)
+- `/debarment` — checks CEIS + CNEP (Brazilian government contract bans)
+
+Both modules accept the same CNPJ and return structured, identifier-first results.
+
+## Important disclaimer
+
+<Warning>
+  A result of `is_debarred: false` means no records were found in CEIS or CNEP at the time of the check. Records may be added after the check. Your compliance program should define the frequency and scope of these checks as part of a broader due diligence process.
+</Warning>
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `422` | Invalid or malformed CNPJ |
+| `422` | Brazilian MEI — not supported |
+| `422` | Country not supported |
+| `403` | Missing API key or module not in plan |
+
+## Pricing
+
+| Plan | Price |
+|------|-------|
+| Pay-as-you-go | $0.10–$0.30 per check |
+| Bundle with Sanctions | Contact us |
+
+<Card title="API Reference" icon="terminal" href="/api-reference/debarment">
+  Full request/response schema with interactive examples.
+</Card>

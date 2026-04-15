@@ -1,0 +1,169 @@
+---
+title: "POST /v1/debarment"
+description: "Check if a Brazilian company is debarred from government contracts (CEIS + CNEP via Portal da Transparência)."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `debarment` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="identifier" type="string" required>
+  Company CNPJ (e.g. `12.345.678/0001-90`). Formatting is optional.
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  ISO 3166-1 alpha-2 country code. Supported: `BR`.
+</ParamField>
+
+## Response
+
+<ResponseField name="identifier" type="string">
+  The queried CNPJ, as provided.
+</ResponseField>
+
+<ResponseField name="country" type="string">
+  Country code.
+</ResponseField>
+
+<ResponseField name="is_debarred" type="boolean">
+  `true` if any records were found in CEIS or CNEP. `false` if no records found.
+</ResponseField>
+
+<ResponseField name="records" type="array">
+  List of debarment records. Empty array if `is_debarred` is `false`.
+</ResponseField>
+
+<ResponseField name="records[].source" type="string">
+  Registry that contains this record: `CEIS` or `CNEP`.
+</ResponseField>
+
+<ResponseField name="records[].sanction_type" type="string">
+  Type of sanction (e.g. `SUSPENSÃO`, `INIDONEIDADE`, `MULTA`).
+</ResponseField>
+
+<ResponseField name="records[].sanctioning_body" type="string">
+  Body that issued the sanction (e.g. `TCU`, `CGU`, `ANTT`).
+</ResponseField>
+
+<ResponseField name="records[].date_start" type="string | null">
+  ISO date when the sanction began.
+</ResponseField>
+
+<ResponseField name="records[].date_end" type="string | null">
+  ISO date when the sanction ends. `null` if indefinite.
+</ResponseField>
+
+<ResponseField name="records[].process_id" type="string | null">
+  Administrative process number associated with the sanction.
+</ResponseField>
+
+<ResponseField name="records[].fine_amount" type="number | null">
+  Fine in BRL. Only present in CNEP records — `null` for CEIS.
+</ResponseField>
+
+<ResponseField name="sources_checked" type="array">
+  Registries checked in this request: `["CEIS", "CNEP"]`.
+</ResponseField>
+
+<ResponseField name="checked_at" type="string">
+  ISO 8601 datetime of this specific check.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/debarment \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "12.345.678/0001-90", "country": "BR"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/debarment",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"identifier": "12.345.678/0001-90", "country": "BR"},
+)
+print(r.json())
+```
+
+```javascript Node.js
+const res = await fetch("https://api.enrichlatam.com/v1/debarment", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ identifier: "12.345.678/0001-90", country: "BR" }),
+});
+console.log(await res.json());
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 Not debarred
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR",
+  "is_debarred": false,
+  "records": [],
+  "sources_checked": ["CEIS", "CNEP"],
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+```json 200 Debarred
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR",
+  "is_debarred": true,
+  "records": [
+    {
+      "source": "CEIS",
+      "sanction_type": "SUSPENSÃO",
+      "sanctioning_body": "TCU",
+      "date_start": "2024-01-15",
+      "date_end": "2026-01-15",
+      "process_id": "TC-012345/2023-8",
+      "fine_amount": null
+    },
+    {
+      "source": "CNEP",
+      "sanction_type": "MULTA",
+      "sanctioning_body": "CGU",
+      "date_start": "2023-06-01",
+      "date_end": null,
+      "process_id": "00190.000123/2023-01",
+      "fine_amount": 250000.00
+    }
+  ],
+  "sources_checked": ["CEIS", "CNEP"],
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+```json 422 Invalid CNPJ
+{
+  "detail": "Invalid Brazilian CNPJ: '12345'. Expected format: 11.222.333/0001-81"
+}
+```
+
+```json 422 MEI blocked
+{
+  "detail": "Brazilian MEIs are not supported. This endpoint is for business entities only."
+}
+```
+
+```json 403 Module not in plan
+{
+  "detail": "Your plan does not include the 'debarment' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

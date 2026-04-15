@@ -30,7 +30,8 @@
               "modules/tenders",
               "modules/validate",
               "modules/monitor",
-              "modules/sanctions"
+              "modules/sanctions",
+              "modules/debarment"
             ]
           },
           {
@@ -88,6 +89,12 @@
             "group": "Sanctions",
             "pages": [
               "api-reference/sanctions"
+            ]
+          },
+          {
+            "group": "Debarment",
+            "pages": [
+              "api-reference/debarment"
             ]
           }
         ]
