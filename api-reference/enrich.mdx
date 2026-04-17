@@ -72,11 +72,11 @@ description: "Get structured firmographic data for a Latin American company."
 </ResponseField>
 
 <ResponseField name="source" type="string">
-  Data source identifier: `sii` (Chile, Capa A), `baseapi` (Chile, Capa B), `receita_federal` (Brazil).
+  Data source identifier: `sii` (Chile), `receita_federal` (Brazil).
 </ResponseField>
 
 <ResponseField name="data_as_of" type="string">
-  Date of the last registry sync (ISO 8601). Present when data is served from the local SII database (Capa A). `null` when data is fetched in real time.
+  Date of the last SII registry sync (ISO 8601). Always present for Chile. `null` for Brazil (data fetched live from Receita Federal).
 </ResponseField>
 
 <RequestExample>
