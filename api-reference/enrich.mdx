@@ -9,14 +9,18 @@ description: "Get structured firmographic data for a Latin American company."
 
 ## Request body
 
-<ParamField body="domain" type="string" required>
-  Company domain (e.g. `example.cl`, `example.com.br`). The API resolves the domain to a tax ID automatically. Supports `.cl` (Chile) and `.com.br` / `.br` (Brazil).
+<ParamField body="domain" type="string">
+  Company domain (e.g. `example.cl`, `example.com.br`). The API resolves the domain to a tax ID automatically. Supports `.cl` (Chile) and `.com.br` / `.br` (Brazil). Required if `identifier` is not provided.
+</ParamField>
+
+<ParamField body="identifier" type="string">
+  Direct tax ID — Chilean RUT (e.g. `76.123.456-7`) or Brazilian CNPJ (e.g. `11.222.333/0001-81`). Skips domain resolution entirely — faster and more accurate when you already know the company ID. Country is auto-detected from the identifier format. Required if `domain` is not provided.
 </ParamField>
 
 ## Response
 
 <ResponseField name="domain" type="string">
-  The queried domain.
+  The queried domain. `null` when the request used `identifier` directly.
 </ResponseField>
 
 <ResponseField name="company_name" type="string">
@@ -77,18 +81,32 @@ description: "Get structured firmographic data for a Latin American company."
 
 <RequestExample>
 
-```bash Chile
+```bash Chile — by domain
 curl -X POST https://api.enrichlatam.com/v1/enrich \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"domain": "example.cl"}'
 ```
 
-```bash Brazil
+```bash Chile — by RUT
+curl -X POST https://api.enrichlatam.com/v1/enrich \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "76.354.771-K"}'
+```
+
+```bash Brazil — by domain
 curl -X POST https://api.enrichlatam.com/v1/enrich \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"domain": "example.com.br"}'
+```
+
+```bash Brazil — by CNPJ
+curl -X POST https://api.enrichlatam.com/v1/enrich \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "47.960.950/0001-21"}'
 ```
 
 ```python Python
@@ -97,7 +115,7 @@ import requests
 r = requests.post(
     "https://api.enrichlatam.com/v1/enrich",
     headers={"X-API-Key": "YOUR_API_KEY"},
-    json={"domain": "example.cl"},
+    json={"identifier": "76.354.771-K"},
 )
 print(r.json())
 ```
@@ -143,6 +161,26 @@ print(r.json())
   "country": "BR",
   "source": "receita_federal",
   "data_as_of": null
+}
+```
+
+```json 200 Chile — by identifier
+{
+  "domain": null,
+  "company_name": "Empresa Ejemplo Spa",
+  "identifier": "76.354.771-K",
+  "activity": "Business Management Consulting Activities",
+  "activity_code": "7020",
+  "size": "small",
+  "employees_range": null,
+  "region": null,
+  "founded_year": 2018,
+  "status": "active",
+  "tech_stack": null,
+  "emails": null,
+  "country": "CL",
+  "source": "sii",
+  "data_as_of": "2026-04-01"
 }
 ```
 

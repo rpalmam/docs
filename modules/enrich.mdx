@@ -1,9 +1,9 @@
 ---
 title: Company Enrichment
-description: Get structured firmographic data for Latin American companies by domain.
+description: Get structured firmographic data for Latin American companies by domain or tax ID.
 ---
 
-The Enrich module returns structured company data from official tax registries. Pass a domain and get back a full company profile — no manual ID lookup required.
+The Enrich module returns structured company data from official tax registries. Pass a domain or a tax ID (RUT/CNPJ) and get back a full company profile.
 
 ## What it returns
 
@@ -17,10 +17,10 @@ The Enrich module returns structured company data from official tax registries. 
 
 | Country | Input | Source |
 |---------|-------|--------|
-| Chile 🇨🇱 | `.cl` domain | SII via BaseAPI.cl |
-| Brazil 🇧🇷 | `.com.br` or `.br` domain | Receita Federal via OpenCNPJ |
+| Chile 🇨🇱 | `.cl` domain or RUT | SII |
+| Brazil 🇧🇷 | `.com.br` / `.br` domain or CNPJ | Receita Federal via OpenCNPJ |
 
-The country is detected automatically from the domain TLD. No `country` parameter needed.
+The country is detected automatically — from the domain TLD or the identifier format. No `country` parameter needed.
 
 ## Request
 
@@ -28,17 +28,34 @@ The country is detected automatically from the domain TLD. No `country` paramete
 POST /v1/enrich
 ```
 
-```json
+<CodeGroup>
+
+```json By domain
 {
   "domain": "example.cl"
 }
 ```
 
+```json By RUT (Chile)
+{
+  "identifier": "76.354.771-K"
+}
+```
+
+```json By CNPJ (Brazil)
+{
+  "identifier": "47.960.950/0001-21"
+}
+```
+
+</CodeGroup>
+
 ### Parameters
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `domain` | string | ✅ | Company domain. Supports `.cl` (Chile) and `.com.br` / `.br` (Brazil). |
+| `domain` | string | conditional | Company domain. Required if `identifier` is not provided. |
+| `identifier` | string | conditional | Chilean RUT or Brazilian CNPJ. Skips domain resolution — faster and more accurate when you already have the tax ID. Required if `domain` is not provided. |
 
 ## Response
 
@@ -88,7 +105,7 @@ POST /v1/enrich
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `domain` | string | Queried domain |
+| `domain` | string | Queried domain. `null` when request used `identifier` directly. |
 | `company_name` | string | Official legal name |
 | `identifier` | string | Tax ID — RUT (Chile) or CNPJ (Brazil) |
 | `activity` | string | Primary economic activity |
