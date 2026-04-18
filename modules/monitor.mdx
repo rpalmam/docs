@@ -46,6 +46,7 @@ r = requests.post(
 )
 subscription = r.json()
 print(subscription["subscription_id"])
+# Store subscription["webhook_secret"] — you'll need it to verify incoming webhooks
 
 # List subscriptions
 subs = requests.get(
@@ -79,7 +80,46 @@ When a change is detected, EnrichLATAM sends a `POST` to your `webhook_url`:
 }
 ```
 
-Your endpoint must return `2xx` within 10 seconds. Failed deliveries are not retried in the current version.
+Your endpoint must return `2xx` within 10 seconds. Failed deliveries are retried up to 3 times.
+
+## Verifying webhook signatures
+
+Every webhook includes an `X-Enrichlatam-Signature` header so you can confirm the request came from EnrichLATAM. The `webhook_secret` is returned when you create a subscription — store it securely.
+
+Header format: `t=<unix_timestamp>;v1=<hmac_sha256>`
+
+```python Python
+import hashlib
+import hmac
+import json
+import time
+from fastapi import Request, HTTPException
+
+async def verify_enrichlatam_webhook(request: Request, webhook_secret: str):
+    body = await request.body()
+    header = request.headers.get("X-Enrichlatam-Signature", "")
+
+    parts = dict(p.split("=", 1) for p in header.split(";") if "=" in p)
+    ts = parts.get("t")
+    received = parts.get("v1")
+
+    if not ts or not received:
+        raise HTTPException(status_code=400, detail="Missing signature")
+
+    # Reject replayed webhooks older than 5 minutes
+    if abs(time.time() - int(ts)) > 300:
+        raise HTTPException(status_code=400, detail="Webhook timestamp too old")
+
+    signed = f"{ts}:{body.decode()}"
+    expected = hmac.new(webhook_secret.encode(), signed.encode(), hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(expected, received):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+```
+
+<Note>
+  The `webhook_url` must use **HTTPS**. Private IP addresses and localhost are rejected at subscription creation.
+</Note>
 
 ## Pricing
 
