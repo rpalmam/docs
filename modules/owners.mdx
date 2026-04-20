@@ -1,0 +1,153 @@
+---
+title: Ownership
+description: Get the full ownership structure (quadro societário) of a Brazilian company from Receita Federal.
+---
+
+The Owners module returns the complete list of shareholders and legal representatives (quadro societário) for a Brazilian company, as registered with Receita Federal. Useful for KYB, AML screening, and corporate transparency workflows.
+
+<Note>
+  CPFs of individual shareholders are partially masked by Brazilian law (LGPD) at the source. Only the first three and last two digits are visible (e.g. `***123456**`). CNPJs of corporate shareholders are returned in full.
+</Note>
+
+## What it returns
+
+For a given CNPJ, the API returns:
+
+- A list of all registered owners (socios) and their roles
+- Entity type: individual (`PF`) or company (`PJ`)
+- Entry date in the ownership structure
+- For legal representatives: their name and role
+- Country of domicile (for foreign shareholders)
+
+## Supported countries
+
+| Country | Identifier | Notes |
+|---------|-----------|-------|
+| Brazil 🇧🇷 | CNPJ (e.g. `12.345.678/0001-90`) | Business entities only — MEIs blocked |
+
+## Request
+
+```bash
+POST /v1/owners
+```
+
+```json
+{
+  "identifier": "47.960.950/0001-21",
+  "country": "BR"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | ✅ | Company CNPJ. Formatting optional. |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Supported: `BR`. |
+
+## Response
+
+<CodeGroup>
+
+```json With owners
+{
+  "identifier": "47.960.950/0001-21",
+  "company_name": "MAGAZINE LUIZA S.A.",
+  "country": "BR",
+  "owners": [
+    {
+      "name": "LUIZA HELENA TRAJANO INÁCIO RODRIGUES",
+      "role": "Presidente do Conselho de Administração",
+      "entity_type": "individual",
+      "identifier": "***123456**",
+      "entry_date": "2011-03-07",
+      "country": null,
+      "legal_rep_name": null,
+      "legal_rep_role": null
+    },
+    {
+      "name": "TRAJANO INÁCIO RODRIGUES PARTICIPAÇÕES S.A.",
+      "role": "Sócio",
+      "entity_type": "company",
+      "identifier": "12.345.678/0001-90",
+      "entry_date": "2000-01-01",
+      "country": null,
+      "legal_rep_name": "FREDERICO TRAJANO INÁCIO RODRIGUES",
+      "legal_rep_role": "Diretor"
+    }
+  ],
+  "source": "receita_federal",
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+```json No owners on record
+{
+  "identifier": "12.345.678/0001-90",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "country": "BR",
+  "owners": [],
+  "source": "receita_federal",
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+</CodeGroup>
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | The queried CNPJ |
+| `company_name` | string | Official legal company name |
+| `country` | string | Country code |
+| `owners` | array | List of registered owners (may be empty) |
+| `owners[].name` | string | Full name of the owner |
+| `owners[].role` | string | Role in the company (e.g. `Sócio`, `Administrador`) |
+| `owners[].entity_type` | string | `individual` or `company` |
+| `owners[].identifier` | string \| null | Masked CPF (individuals) or CNPJ (companies) |
+| `owners[].entry_date` | string \| null | ISO date when the owner joined the structure |
+| `owners[].country` | string \| null | Country code for foreign shareholders |
+| `owners[].legal_rep_name` | string \| null | Legal representative's name (company owners only) |
+| `owners[].legal_rep_role` | string \| null | Legal representative's role |
+| `source` | string | Always `receita_federal` |
+| `checked_at` | string | ISO datetime of this check |
+
+Data is fetched live from Receita Federal on each request and cached for 24 hours.
+
+## Use cases
+
+- **KYB / beneficial ownership** — understand who controls a company before onboarding
+- **AML screening** — cross-reference owners against sanctions lists
+- **CSRD / EUDR compliance** — supply chain due diligence requiring corporate transparency
+- **Credit analysis** — assess ownership concentration and group structure
+
+## Bundle: Compliance BR
+
+For a complete Brazilian compliance workflow, combine Owners with:
+
+- `/sanctions` — OFAC SDN + UN international sanctions
+- `/debarment` — CEIS + CNEP government contract bans
+- `/labor` — Lista Suja slave labor registry
+
+All four modules accept a CNPJ and return structured, identifier-first results.
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `422` | Invalid or malformed CNPJ |
+| `422` | Brazilian MEI — not supported |
+| `422` | Country not supported |
+| `403` | Missing API key or module not in plan |
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Owners | $49/month | 500 lookups |
+| Overage | — | $0.15 per extra lookup |
+
+<Card title="API Reference" icon="terminal" href="/api-reference/owners">
+  Full request/response schema with interactive examples.
+</Card>

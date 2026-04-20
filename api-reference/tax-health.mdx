@@ -1,0 +1,162 @@
+---
+title: "POST /v1/tax-health"
+description: "Assess a Chilean company's tax standing from SII data — status, debtor registry, revenue tier, and risk signals."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `tax_health` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="identifier" type="string" required>
+  Company RUT (e.g. `76.354.771-K`). Formatting is optional. Personal RUTs (natural persons) are not accepted.
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  ISO 3166-1 alpha-2 country code. Supported: `CL`.
+</ParamField>
+
+## Response
+
+<ResponseField name="identifier" type="string">
+  The queried RUT, as provided.
+</ResponseField>
+
+<ResponseField name="company_name" type="string">
+  Official company name from SII.
+</ResponseField>
+
+<ResponseField name="country" type="string">
+  Country code.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Tax registration status: `active`, `inactive`, or `not_found`.
+</ResponseField>
+
+<ResponseField name="tax_debtor" type="boolean | null">
+  `true` if the company appears on the SII nómina de deudores tributarios. `null` if the registry has not been synced yet (transient post-deploy state).
+</ResponseField>
+
+<ResponseField name="tax_debt_amount" type="number | null">
+  Outstanding tax debt in CLP. `null` if not a debtor or amount not available.
+</ResponseField>
+
+<ResponseField name="company_age_years" type="integer | null">
+  Years since first SII registration. `null` if registration date unavailable.
+</ResponseField>
+
+<ResponseField name="deregistered_at" type="string | null">
+  ISO date when the company was deregistered. Only present for inactive companies.
+</ResponseField>
+
+<ResponseField name="revenue_tier" type="string | null">
+  SII tramo classification: `micro`, `small`, `medium`, or `large`. `null` if not available.
+</ResponseField>
+
+<ResponseField name="risk_signals" type="array">
+  List of risk flag strings. Empty if no signals detected. Possible values: `tax_debtor`, `inactive_company`, `recently_deregistered`, `new_company`, `micro_revenue_tier`.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Always `sii`.
+</ResponseField>
+
+<ResponseField name="data_as_of" type="string | null">
+  ISO date of the last SII Capa A registry sync. Use this to assess data freshness.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/tax-health \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "76.354.771-K", "country": "CL"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/tax-health",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"identifier": "76.354.771-K", "country": "CL"},
+)
+print(r.json())
+```
+
+```javascript Node.js
+const res = await fetch("https://api.enrichlatam.com/v1/tax-health", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ identifier: "76.354.771-K", country: "CL" }),
+});
+console.log(await res.json());
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 Healthy company
+{
+  "identifier": "76.354.771-K",
+  "company_name": "FALABELLA S.A.",
+  "country": "CL",
+  "status": "active",
+  "tax_debtor": false,
+  "tax_debt_amount": null,
+  "company_age_years": 35,
+  "deregistered_at": null,
+  "revenue_tier": "large",
+  "risk_signals": [],
+  "source": "sii",
+  "data_as_of": "2026-03-15"
+}
+```
+
+```json 200 Company with risk signals
+{
+  "identifier": "76.123.456-7",
+  "company_name": "EMPRESA RIESGO LTDA",
+  "country": "CL",
+  "status": "active",
+  "tax_debtor": true,
+  "tax_debt_amount": 4500000.00,
+  "company_age_years": 1,
+  "deregistered_at": null,
+  "revenue_tier": "micro",
+  "risk_signals": [
+    "tax_debtor",
+    "new_company",
+    "micro_revenue_tier"
+  ],
+  "source": "sii",
+  "data_as_of": "2026-03-15"
+}
+```
+
+```json 422 Personal RUT
+{
+  "detail": "Personal RUTs are not supported. This endpoint is for company RUTs only."
+}
+```
+
+```json 422 Invalid RUT
+{
+  "detail": "Invalid Chilean RUT: '76354771-X'"
+}
+```
+
+```json 403 Module not in plan
+{
+  "detail": "Your plan does not include the 'tax_health' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

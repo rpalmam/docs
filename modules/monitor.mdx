@@ -76,6 +76,14 @@ When a change is detected, EnrichLATAM sends a `POST` to your `webhook_url`:
       "to": "inactive"
     }
   },
+  "context": [
+    {
+      "field": "status",
+      "previous": "active",
+      "current": "inactive",
+      "detected_at": "2026-04-13T10:00:00Z"
+    }
+  ],
   "detected_at": "2026-04-13T10:00:00Z"
 }
 ```

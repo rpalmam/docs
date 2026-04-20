@@ -1,0 +1,159 @@
+---
+title: "POST /v1/owners"
+description: "Get the full ownership structure (quadro societário) of a Brazilian company from Receita Federal."
+---
+
+<ParamField header="X-API-Key" type="string" required>
+  Your API key. Requires the `owners` module.
+</ParamField>
+
+## Request body
+
+<ParamField body="identifier" type="string" required>
+  Company CNPJ (e.g. `47.960.950/0001-21`). Formatting is optional.
+</ParamField>
+
+<ParamField body="country" type="string" required>
+  ISO 3166-1 alpha-2 country code. Supported: `BR`.
+</ParamField>
+
+## Response
+
+<ResponseField name="identifier" type="string">
+  The queried CNPJ, as provided.
+</ResponseField>
+
+<ResponseField name="company_name" type="string">
+  Official legal company name from Receita Federal.
+</ResponseField>
+
+<ResponseField name="country" type="string">
+  Country code.
+</ResponseField>
+
+<ResponseField name="owners" type="array">
+  List of registered owners (socios). Empty array if none on record.
+</ResponseField>
+
+<ResponseField name="owners[].name" type="string">
+  Full name of the owner or shareholder.
+</ResponseField>
+
+<ResponseField name="owners[].role" type="string">
+  Role in the company structure (e.g. `Sócio`, `Administrador`, `Presidente do Conselho`).
+</ResponseField>
+
+<ResponseField name="owners[].entity_type" type="string">
+  `individual` (pessoa física) or `company` (pessoa jurídica).
+</ResponseField>
+
+<ResponseField name="owners[].identifier" type="string | null">
+  Masked CPF for individuals (LGPD-compliant) or full CNPJ for companies.
+</ResponseField>
+
+<ResponseField name="owners[].entry_date" type="string | null">
+  ISO date when the owner joined the ownership structure.
+</ResponseField>
+
+<ResponseField name="owners[].country" type="string | null">
+  Country code for foreign shareholders. `null` for Brazilian residents.
+</ResponseField>
+
+<ResponseField name="owners[].legal_rep_name" type="string | null">
+  Name of the legal representative (for company owners only).
+</ResponseField>
+
+<ResponseField name="owners[].legal_rep_role" type="string | null">
+  Role of the legal representative.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Always `receita_federal`.
+</ResponseField>
+
+<ResponseField name="checked_at" type="string">
+  ISO 8601 datetime of this specific check.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://api.enrichlatam.com/v1/owners \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "47.960.950/0001-21", "country": "BR"}'
+```
+
+```python Python
+import requests
+
+r = requests.post(
+    "https://api.enrichlatam.com/v1/owners",
+    headers={"X-API-Key": "YOUR_API_KEY"},
+    json={"identifier": "47.960.950/0001-21", "country": "BR"},
+)
+print(r.json())
+```
+
+```javascript Node.js
+const res = await fetch("https://api.enrichlatam.com/v1/owners", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ identifier: "47.960.950/0001-21", country: "BR" }),
+});
+console.log(await res.json());
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 With owners
+{
+  "identifier": "47.960.950/0001-21",
+  "company_name": "MAGAZINE LUIZA S.A.",
+  "country": "BR",
+  "owners": [
+    {
+      "name": "LUIZA HELENA TRAJANO INÁCIO RODRIGUES",
+      "role": "Presidente do Conselho de Administração",
+      "entity_type": "individual",
+      "identifier": "***123456**",
+      "entry_date": "2011-03-07",
+      "country": null,
+      "legal_rep_name": null,
+      "legal_rep_role": null
+    }
+  ],
+  "source": "receita_federal",
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+```json 200 No owners on record
+{
+  "identifier": "12.345.678/0001-90",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "country": "BR",
+  "owners": [],
+  "source": "receita_federal",
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+```json 422 Invalid CNPJ
+{
+  "detail": "Invalid Brazilian CNPJ: '12345'. Expected format: 11.222.333/0001-81"
+}
+```
+
+```json 403 Module not in plan
+{
+  "detail": "Your plan does not include the 'owners' module. Upgrade at enrichlatam.com."
+}
+```
+
+</ResponseExample>

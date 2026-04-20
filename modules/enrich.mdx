@@ -111,6 +111,7 @@ POST /v1/enrich
 | `activity` | string | Primary economic activity |
 | `activity_code` | string | CIIU (CL) or CNAE (BR) activity code |
 | `size` | string | `small`, `large`, or `unknown` |
+| `sales_range` | string \| null | Revenue tier from SII tramo (CL only): `micro`, `small`, `medium`, `large`, or `null` |
 | `employees_range` | string | Estimated employee range (when available) |
 | `region` | string | Administrative region (when available) |
 | `founded_year` | integer | Year of first tax registration |
@@ -133,8 +134,8 @@ POST /v1/enrich
 
 | Plan | Price | Includes |
 |------|-------|---------|
-| Enrich | $59/month | 500 lookups |
-| Overage | — | $0.15 per extra lookup |
+| Enrich | $49/month | 500 lookups |
+| Overage | — | $0.10 per extra lookup |
 
 <Card title="API Reference" icon="terminal" href="/api-reference/enrich">
   Full request/response schema with interactive examples.

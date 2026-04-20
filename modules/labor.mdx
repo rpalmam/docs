@@ -1,0 +1,139 @@
+---
+title: Labor Compliance
+description: Check if a Brazilian company appears on the Lista Suja do Trabalho Escravo — Brazil's official slave labor registry.
+---
+
+The Labor module checks whether a Brazilian company's CNPJ appears on the **Lista Suja do Trabalho Escravo**, Brazil's official registry of employers found to have subjected workers to conditions analogous to slavery. Published by the Ministry of Labor (MTE) via the Portal da Transparência.
+
+<Warning>
+  Appearance on the Lista Suja indicates findings by labor inspection authorities. Companies can be removed after remediation. Always check `checked_at` and re-verify periodically.
+</Warning>
+
+## What it returns
+
+For a given CNPJ, the API returns:
+
+- Whether the company has any labor violation records (`has_violations`)
+- Full record details: year, workers rescued, state, municipality, and economic activity
+- Which registries were checked
+
+## Supported countries
+
+| Country | Identifier | Registry |
+|---------|-----------|---------|
+| Brazil 🇧🇷 | CNPJ (e.g. `12.345.678/0001-90`) | MTE — Lista Suja do Trabalho Escravo |
+
+## Request
+
+```bash
+POST /v1/labor
+```
+
+```json
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | ✅ | Company CNPJ. Formatting optional. |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Supported: `BR`. |
+
+## Response
+
+<CodeGroup>
+
+```json Clean (no violations)
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR",
+  "has_violations": false,
+  "records": [],
+  "sources_checked": ["TRABALHO_ESCRAVO"],
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+```json Violations found
+{
+  "identifier": "12.345.678/0001-90",
+  "country": "BR",
+  "has_violations": true,
+  "records": [
+    {
+      "source": "TRABALHO_ESCRAVO",
+      "year": 2022,
+      "workers_rescued": 14,
+      "state": "PA",
+      "municipality": "Altamira",
+      "activity": "Pecuária bovina",
+      "decision_id": "12345"
+    }
+  ],
+  "sources_checked": ["TRABALHO_ESCRAVO"],
+  "checked_at": "2026-04-15T12:00:00+00:00"
+}
+```
+
+</CodeGroup>
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | The queried CNPJ |
+| `country` | string | Country code |
+| `has_violations` | boolean | `true` if any records were found |
+| `records` | array | List of violation records (empty if clean) |
+| `records[].source` | string | Always `TRABALHO_ESCRAVO` |
+| `records[].year` | integer \| null | Year of the labor inspection finding |
+| `records[].workers_rescued` | integer \| null | Number of workers rescued |
+| `records[].state` | string \| null | Brazilian state abbreviation (e.g. `PA`, `MT`) |
+| `records[].municipality` | string \| null | Municipality where the violation occurred |
+| `records[].activity` | string \| null | Economic activity at the time of inspection |
+| `records[].decision_id` | string \| null | Administrative decision identifier |
+| `sources_checked` | array | Registries checked |
+| `checked_at` | string | ISO datetime of this check |
+
+Data is fetched live from the Portal da Transparência API on each request and cached for 24 hours.
+
+## Use cases
+
+- **CSRD / EUDR supply chain compliance** — mandatory for EU importers under new due diligence regulations
+- **ESG screening** — flag high-risk suppliers before onboarding
+- **Pre-contract due diligence** — combine with `/debarment` for a full government-registry check
+- **Factoring and trade finance** — assess labor risk before financing
+
+## Bundle: Compliance BR
+
+For a complete Brazilian compliance workflow, combine Labor with:
+
+- `/sanctions` — OFAC SDN + UN international sanctions
+- `/debarment` — CEIS + CNEP government contract bans
+- `/owners` — beneficial ownership structure
+
+All four modules accept a CNPJ and return structured, identifier-first results.
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `422` | Invalid or malformed CNPJ |
+| `422` | Brazilian MEI — not supported |
+| `422` | Country not supported |
+| `403` | Missing API key or module not in plan |
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Labor | $29/month | 200 checks |
+| Overage | — | $0.15 per extra check |
+
+<Card title="API Reference" icon="terminal" href="/api-reference/labor">
+  Full request/response schema with interactive examples.
+</Card>

@@ -31,7 +31,10 @@
               "modules/validate",
               "modules/monitor",
               "modules/sanctions",
-              "modules/debarment"
+              "modules/debarment",
+              "modules/owners",
+              "modules/labor",
+              "modules/tax_health"
             ]
           },
           {
@@ -95,6 +98,24 @@
             "group": "Debarment",
             "pages": [
               "api-reference/debarment"
+            ]
+          },
+          {
+            "group": "Ownership",
+            "pages": [
+              "api-reference/owners"
+            ]
+          },
+          {
+            "group": "Labor",
+            "pages": [
+              "api-reference/labor"
+            ]
+          },
+          {
+            "group": "Tax Health",
+            "pages": [
+              "api-reference/tax-health"
             ]
           }
         ]

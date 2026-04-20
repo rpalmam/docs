@@ -1,0 +1,176 @@
+---
+title: Tax Health
+description: Assess a Chilean company's tax standing — status, debt registry, revenue tier, and risk signals — from SII data.
+---
+
+The Tax Health module gives you a structured risk assessment of a Chilean company's tax position. It combines data from the SII company registry (Capa A) with the official SII tax debtor list (nómina de deudores tributarios) to surface actionable signals.
+
+## What it returns
+
+For a given RUT, the API returns:
+
+- Current tax registration status (`status`)
+- Whether the company appears on the SII tax debtor registry (`tax_debtor`)
+- Outstanding debt amount when available (`tax_debt_amount`)
+- Company age in years (`company_age_years`)
+- Revenue tier from SII tramo classification (`revenue_tier`)
+- Interpreted risk signals in English (`risk_signals`)
+
+## Supported countries
+
+| Country | Identifier | Source |
+|---------|-----------|--------|
+| Chile 🇨🇱 | RUT empresas (e.g. `76.354.771-K`) | SII — Capa A + Nómina Deudores |
+
+<Note>
+  Personal RUTs (natural persons) are not supported. Only company RUTs (empresas) are accepted.
+</Note>
+
+## Request
+
+```bash
+POST /v1/tax-health
+```
+
+```json
+{
+  "identifier": "76.354.771-K",
+  "country": "CL"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | ✅ | Company RUT. Formatting optional (dots and hyphen). |
+| `country` | string | ✅ | ISO 3166-1 alpha-2 country code. Supported: `CL`. |
+
+## Response
+
+<CodeGroup>
+
+```json Healthy company
+{
+  "identifier": "76.354.771-K",
+  "company_name": "FALABELLA S.A.",
+  "country": "CL",
+  "status": "active",
+  "tax_debtor": false,
+  "tax_debt_amount": null,
+  "company_age_years": 35,
+  "deregistered_at": null,
+  "revenue_tier": "large",
+  "risk_signals": [],
+  "source": "sii",
+  "data_as_of": "2026-03-15"
+}
+```
+
+```json Company with risk signals
+{
+  "identifier": "76.123.456-7",
+  "company_name": "EMPRESA RIESGO LTDA",
+  "country": "CL",
+  "status": "active",
+  "tax_debtor": true,
+  "tax_debt_amount": 4500000.00,
+  "company_age_years": 1,
+  "deregistered_at": null,
+  "revenue_tier": "micro",
+  "risk_signals": [
+    "tax_debtor",
+    "new_company",
+    "micro_revenue_tier"
+  ],
+  "source": "sii",
+  "data_as_of": "2026-03-15"
+}
+```
+
+```json Inactive company
+{
+  "identifier": "76.999.888-K",
+  "company_name": "EMPRESA CERRADA SPA",
+  "country": "CL",
+  "status": "inactive",
+  "tax_debtor": null,
+  "tax_debt_amount": null,
+  "company_age_years": 3,
+  "deregistered_at": "2025-11-01",
+  "revenue_tier": null,
+  "risk_signals": [
+    "inactive_company",
+    "recently_deregistered"
+  ],
+  "source": "sii",
+  "data_as_of": "2026-03-15"
+}
+```
+
+</CodeGroup>
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | The queried RUT |
+| `company_name` | string | Official company name from SII |
+| `country` | string | Country code |
+| `status` | string | `active`, `inactive`, or `not_found` |
+| `tax_debtor` | boolean \| null | `true` if on the SII debtor registry; `null` if the registry hasn't been synced yet |
+| `tax_debt_amount` | number \| null | Outstanding debt amount in CLP (when available) |
+| `company_age_years` | integer \| null | Years since first SII registration |
+| `deregistered_at` | string \| null | ISO date the company was deregistered (if inactive) |
+| `revenue_tier` | string \| null | SII tramo: `micro`, `small`, `medium`, `large`, or `null` |
+| `risk_signals` | array | List of risk flags (empty if none). See below. |
+| `source` | string | Always `sii` |
+| `data_as_of` | string \| null | Date of last SII registry sync (ISO date) |
+
+### Risk signals
+
+| Signal | Meaning |
+|--------|---------|
+| `tax_debtor` | Company is on the SII nómina de deudores tributarios |
+| `inactive_company` | Tax status is inactive |
+| `recently_deregistered` | Deregistered in the last 12 months |
+| `new_company` | Registered less than 2 years ago |
+| `micro_revenue_tier` | Revenue tier is `micro` (lowest SII tramo) |
+
+<Note>
+  `tax_debtor: null` means the SII tax debtor registry has not been synced yet — this is a transient state after a fresh deployment. It does **not** mean the company is or isn't a debtor.
+</Note>
+
+## Data freshness
+
+| Data | Freshness |
+|------|-----------|
+| Company status, name, tramo | Up to 30 days (SII Capa A sync) |
+| Tax debtor registry | Updated daily from SII nómina |
+
+## Use cases
+
+- **Credit risk scoring** — quickly assess tax health before extending credit
+- **Supplier onboarding** — flag high-risk counterparties before procurement
+- **Invoice factoring** — screen companies before financing their receivables
+- **KYB enrichment** — add tax standing to your compliance file alongside `/kyb`
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `422` | Invalid or malformed RUT |
+| `422` | Personal RUT (natural person) — not supported |
+| `422` | Country not supported |
+| `403` | Missing API key or module not in plan |
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Tax Health | $49/month | 500 checks |
+| Overage | — | $0.15 per extra check |
+
+<Card title="API Reference" icon="terminal" href="/api-reference/tax-health">
+  Full request/response schema with interactive examples.
+</Card>
