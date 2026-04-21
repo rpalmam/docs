@@ -14,7 +14,7 @@ description: "Search active public tenders by keyword."
 </ParamField>
 
 <ParamField body="country" type="string" required>
-  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`, `MX`, `CO`.
+  ISO 3166-1 alpha-2 country code. Supported: `CL`, `BR`, `CO`.
 </ParamField>
 
 ## Response
@@ -35,11 +35,11 @@ description: "Search active public tenders by keyword."
 </ResponseField>
 
 <ResponseField name="source" type="string">
-  Data source: `mercadopublico` (CL), `pncp` (BR), `comprasmx` (MX), `secopii` (CO).
+  Data source: `mercadopublico` (CL), `pncp` (BR), `secopii` (CO).
 </ResponseField>
 
 <Note>
-  Currently returns up to 20 results per page. For Brazil (PNCP) and Mexico (ComprasMX), keyword filtering is applied client-side on the tender description field. For Colombia (SECOP II), keyword filtering is server-side via Socrata SoQL. Pagination is on the roadmap.
+  For Brazil (PNCP), keyword filtering is applied client-side on the tender description field. For Colombia (SECOP II), keyword filtering is server-side via Socrata SoQL.
 </Note>
 
 <RequestExample>
@@ -56,13 +56,6 @@ curl -X POST https://api.enrichlatam.com/v1/tenders/search \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"keyword": "desenvolvimento software", "country": "BR"}'
-```
-
-```bash Mexico
-curl -X POST https://api.enrichlatam.com/v1/tenders/search \
-  -H "X-API-Key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"keyword": "servicios tecnología", "country": "MX"}'
 ```
 
 ```bash Colombia

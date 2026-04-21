@@ -1,6 +1,6 @@
 ---
-title: "Public tenders via API: Chile, Brazil, and Mexico"
-description: "How to programmatically access public procurement data from Latin American governments — Mercado Público (CL), PNCP (BR), and ComprasMX (MX)."
+title: "Public tenders via API: Chile, Brazil, and Colombia"
+description: "How to programmatically access public procurement data from Latin American governments — Mercado Público (CL), PNCP (BR), and SECOP II (CO)."
 ---
 
 Latin American governments publish thousands of tenders every month through official procurement portals. This data is valuable for:
@@ -10,7 +10,7 @@ Latin American governments publish thousands of tenders every month through offi
 - **Due diligence**: verify a supplier's contracting history
 - **Market research**: analyze public spending by sector or region
 
-This guide shows how to access this data programmatically for Chile, Brazil, and Mexico.
+This guide shows how to access this data programmatically for Chile, Brazil, and Colombia.
 
 ---
 
@@ -20,7 +20,7 @@ This guide shows how to access this data programmatically for Chile, Brazil, and
 |---------|--------|-----|----------|
 | Chile 🇨🇱 | Mercado Público | REST (requires a free ticket) | Tenders + awarded contracts |
 | Brazil 🇧🇷 | PNCP | Public REST, no auth | Federal contracts since 2017 |
-| Mexico 🇲🇽 | ComprasMX (OCDS) | Public REST, no auth | Federal APF since 2017 |
+| Colombia 🇨🇴 | SECOP II | Public REST, Socrata SoQL | Federal and regional contracts |
 
 All three systems are publicly accessible. EnrichLATAM unifies them into a single API with a consistent format.
 
@@ -28,7 +28,7 @@ All three systems are publicly accessible. EnrichLATAM unifies them into a singl
 
 ## Use case: contracts where a company is the supplier
 
-Given a company's RUT, CNPJ, or RFC, retrieve all its government contracts:
+Given a company's RUT, CNPJ, or NIT, retrieve all its government contracts:
 
 ```python
 import requests
@@ -41,13 +41,13 @@ def company_contracts(tax_id: str, country: str) -> dict:
     Returns government contracts where the company is the supplier.
 
     Args:
-        tax_id: RUT (CL), CNPJ (BR), or RFC (MX)
-        country: "CL", "BR", or "MX"
+        tax_id: RUT (CL), CNPJ (BR), or NIT (CO)
+        country: "CL", "BR", or "CO"
     """
     response = requests.post(
         f"{BASE_URL}/v1/tenders",
         headers={"X-API-Key": API_KEY},
-        json={"rut": tax_id, "country": country},
+        json={"identifier": tax_id, "country": country},
     )
     response.raise_for_status()
     return response.json()
@@ -61,9 +61,9 @@ print(f"Chile: {cl['total_orders']} contracts — source: {cl['source']}")
 br = company_contracts("28.591.276/0001-00", "BR")
 print(f"Brazil: {br['total_orders']} contracts — source: {br['source']}")
 
-# Mexico — by RFC
-mx = company_contracts("EMP123456ABC", "MX")
-print(f"Mexico: {mx['total_orders']} contracts — source: {mx['source']}")
+# Colombia — by NIT
+co = company_contracts("900123456-1", "CO")
+print(f"Colombia: {co['total_orders']} contracts — source: {co['source']}")
 ```
 
 **Example response (Chile — Mercado Público):**
@@ -133,7 +133,7 @@ for c in awarded["contracts"]:
 
 ## Use case: search active tenders by keyword
 
-Find open tenders across any of the three countries:
+Find open tenders across any supported country:
 
 ```python
 def search_tenders(keyword: str, country: str) -> dict:
@@ -151,9 +151,13 @@ results = search_tenders("software development", "CL")
 for t in results["results"]:
     print(f"[{t['code']}] {t['name']} — closes: {t['closes_at']}")
 
-# Search in Mexico
-mx = search_tenders("technology consulting", "MX")
-print(f"Mexico: {mx['total']} results")
+# Search in Brazil
+br = search_tenders("desenvolvimento software", "BR")
+print(f"Brazil: {br['total']} results")
+
+# Search in Colombia
+co = search_tenders("consultoría tecnológica", "CO")
+print(f"Colombia: {co['total']} results")
 ```
 
 ---
@@ -207,11 +211,10 @@ print(profile)
 - Covers Federal Public Administration contracts
 - Includes active contracts and historical records
 
-### ComprasMX (Mexico)
-- No authentication required — standard OCDS format
-- API at `api.datos.gob.mx/v2/contratacionesabiertas`
-- Covers federal APF since 2017
-- License: Decreto de Datos Abiertos 2015 (commercial use permitted with attribution)
+### SECOP II (Colombia)
+- No authentication required — public Socrata REST API
+- Keyword filtering applied server-side via Socrata SoQL
+- Covers federal and regional contracts under Law 1712 (Transparency Law)
 
 ---
 
@@ -221,7 +224,7 @@ print(profile)
 |--------|---------|---------|
 | Mercado Público (mercadopublico.cl) | Chile 🇨🇱 | Public data — Ley 20.285 |
 | PNCP (pncp.gov.br) | Brazil 🇧🇷 | CC BY-ND 3.0 |
-| ComprasMX OCDS (api.datos.gob.mx) | Mexico 🇲🇽 | Decreto Datos Abiertos 2015 |
+| SECOP II — datos.gov.co | Colombia 🇨🇴 | Open data — Colombian Law 1712 |
 
 ---
 
