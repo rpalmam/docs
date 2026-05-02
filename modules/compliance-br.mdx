@@ -1,0 +1,226 @@
+---
+title: Compliance BR Bundle
+description: CSRD/EUDR-ready supplier verification for Brazilian companies. KYB + Sanctions + Debarment + Labor + Owners in a single consolidated check with a deterministic risk level.
+---
+
+The **Compliance BR** bundle runs five compliance checks against any Brazilian CNPJ in a single API call and returns a consolidated response with a deterministic `risk_level` plus the raw findings from every source — designed for CSRD assurance and EUDR supplier due diligence workflows.
+
+<Note>
+  This is a bundle, not a different product. Internally each underlying module retains its own cache, audit fields and sources_checked metadata. The consolidated response stays audit-grade so you can hand it to a Big Four auditor or pass it through to your CSRD reporting platform.
+</Note>
+
+## Why this bundle exists
+
+CSRD (Corporate Sustainability Reporting Directive) and EUDR (EU Deforestation Regulation) oblige large EU companies to document the integrity of every supplier — including those in Latin America. Brazil is the hardest country to evidence: the data is public, but it lives in five different government portals.
+
+Compliance BR aggregates all five into one consolidated response so a procurement or compliance team can verify a Brazilian supplier in seconds instead of 30–60 minutes per CNPJ.
+
+## What's included
+
+| Check | Source | What it covers |
+|-------|--------|---------------|
+| **KYB** | Receita Federal (via OpenCNPJ) | Legal name, status, activity, registration date |
+| **Sanctions** | OFAC SDN, UN Consolidated | International sanctions watchlists |
+| **Debarment** | CEIS, CNEP (Portal da Transparência) | Public-procurement bans + corruption-related penalties |
+| **Labor** | Lista Suja (Ministério do Trabalho) | Employers found using slave-analogous labor |
+| **Owners** | Receita Federal (QSA) | Partners, directors and legal representatives |
+
+## Risk level
+
+The consolidated response includes a deterministic `risk_level` computed as follows:
+
+| Level | When |
+|-------|------|
+| `high` | Any sanctions match **or** Lista Suja record |
+| `medium` | Any debarment record (CEIS/CNEP) **or** KYB status is not `active` |
+| `low` | All checks clean and KYB active |
+
+The `risk_reasons` array surfaces every signal that contributed — even when `high` overrides `medium`, every triggered reason is reported so your audit trail is complete.
+
+## Request
+
+```bash
+POST /v1/compliance-br
+```
+
+```json
+{
+  "cnpj": "11.222.333/0001-81"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `cnpj` | string | ✅ | Brazilian CNPJ. Formatting optional (with or without dots/slashes). |
+
+## Response
+
+<CodeGroup>
+
+```json Low risk
+{
+  "cnpj": "11.222.333/0001-81",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "risk_level": "low",
+  "risk_reasons": [],
+  "checks": {
+    "kyb": {
+      "company_name": "EMPRESA EXEMPLO LTDA",
+      "status": "active",
+      "verified": true,
+      "founded_year": 2015,
+      "data_as_of": "2026-04-30"
+    },
+    "sanctions": {
+      "is_sanctioned": false,
+      "matches": [],
+      "sources_checked": ["OFAC_SDN", "UN_CONSOLIDATED"]
+    },
+    "debarment": {
+      "is_debarred": false,
+      "records": [],
+      "sources_checked": ["CEIS", "CNEP"]
+    },
+    "labor": {
+      "has_violations": false,
+      "records": [],
+      "sources_checked": ["TRABALHO_ESCRAVO"]
+    },
+    "owners": {
+      "count": 3,
+      "owners": [
+        {
+          "name": "João da Silva",
+          "role": "Sócio-Administrador",
+          "entity_type": "individual",
+          "identifier": "***123456**",
+          "entry_date": "2015-03-12",
+          "country": "Brasil",
+          "legal_rep_name": null,
+          "legal_rep_role": null
+        }
+      ]
+    }
+  },
+  "sources_failed": [],
+  "generated_at": "2026-05-02T14:32:11+00:00"
+}
+```
+
+```json High risk (sanctions match)
+{
+  "cnpj": "11.222.333/0001-81",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "risk_level": "high",
+  "risk_reasons": [
+    "Sanctions match in 1 list(s)"
+  ],
+  "checks": {
+    "kyb": { "status": "active", "verified": true, "company_name": "EMPRESA EXEMPLO LTDA", "founded_year": 2015, "data_as_of": "2026-04-30" },
+    "sanctions": {
+      "is_sanctioned": true,
+      "matches": [
+        {
+          "list_name": "OFAC_SDN",
+          "entry_name": "EMPRESA EXEMPLO LTDA",
+          "programs": ["SDNTK"],
+          "matched_id_type": "CNPJ",
+          "matched_id_value": "11222333000181",
+          "uid": "OFAC-12345"
+        }
+      ],
+      "sources_checked": ["OFAC_SDN", "UN_CONSOLIDATED"]
+    },
+    "debarment": { "is_debarred": false, "records": [], "sources_checked": ["CEIS", "CNEP"] },
+    "labor":     { "has_violations": false, "records": [], "sources_checked": ["TRABALHO_ESCRAVO"] },
+    "owners":    { "count": 3, "owners": [] }
+  },
+  "sources_failed": [],
+  "generated_at": "2026-05-02T14:32:11+00:00"
+}
+```
+
+```json Partial failure
+{
+  "cnpj": "11.222.333/0001-81",
+  "company_name": "EMPRESA EXEMPLO LTDA",
+  "risk_level": "low",
+  "risk_reasons": [],
+  "checks": {
+    "kyb":       { "status": "active", "verified": true, "company_name": "EMPRESA EXEMPLO LTDA", "founded_year": 2015, "data_as_of": "2026-04-30" },
+    "sanctions": { "is_sanctioned": false, "matches": [], "sources_checked": ["OFAC_SDN", "UN_CONSOLIDATED"] },
+    "debarment": null,
+    "labor":     { "has_violations": false, "records": [], "sources_checked": ["TRABALHO_ESCRAVO"] },
+    "owners":    { "count": 3, "owners": [] }
+  },
+  "sources_failed": ["debarment"],
+  "generated_at": "2026-05-02T14:32:11+00:00"
+}
+```
+
+</CodeGroup>
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cnpj` | string | The queried CNPJ |
+| `company_name` | string | Resolved from KYB, falling back to Owners if KYB returns no name |
+| `risk_level` | string | `low` \| `medium` \| `high` |
+| `risk_reasons` | array of strings | Every signal that contributed to the risk level |
+| `checks.kyb` | object \| null | KYB result, or `null` if the source failed |
+| `checks.sanctions` | object \| null | Sanctions result, or `null` if the source failed |
+| `checks.debarment` | object \| null | Debarment result, or `null` if the source failed |
+| `checks.labor` | object \| null | Labor result, or `null` if the source failed |
+| `checks.owners` | object \| null | Owners result, or `null` if the source failed |
+| `sources_failed` | array of strings | Names of checks that failed for this request |
+| `generated_at` | string | ISO datetime of this consolidated response |
+
+## Partial failures
+
+If one or more underlying sources are temporarily unavailable, the endpoint still returns `200`. The affected checks appear as `null` and their names are listed in `sources_failed`. **The risk level is computed from whatever data was successfully retrieved** — a positive signal from another source still escalates the risk level.
+
+This is intentional: returning a clean `low` when a source is down would be misleading for a CSRD audit trail. By surfacing the gap explicitly, your compliance team can decide whether to retry, escalate, or document the limitation.
+
+## Use cases
+
+- **CSRD assurance** — auditable supplier integrity records for ESG reports
+- **EUDR compliance** — verify Lista Suja status for any agricultural supplier
+- **Procurement onboarding** — full vendor risk check in seconds, not hours
+- **Periodic re-screening** — schedule monthly checks for your active supplier base
+- **Pre-contract diligence** — block high-risk suppliers before contract signature
+
+## Caching and freshness
+
+Each underlying source has its own cache TTL — typically 6h–24h. When you call `/v1/compliance-br`, the consolidated response will read from the per-source caches when available, so repeated calls within the cache window are fast and cheap. Every check carries its own freshness metadata (`data_as_of` for KYB, `lists_updated_at` is reflected through `sources_checked` for sanctions, and so on) so you always know how fresh the underlying data is.
+
+## Pricing
+
+| Plan | Price | Includes |
+|------|-------|---------|
+| Standard | **$99/month** | 500 consolidated verifications + $0.30 overage |
+| Enterprise | Contact us | Volume pricing, MSA, SLA |
+
+A consolidated verification counts as one — not five.
+
+<Note>
+  The Compliance BR module is enabled separately on your API key. If your key already has KYB, Sanctions, Debarment, Labor and Owners individually, those modules continue to work as standalone endpoints — the bundle is a different SKU intended for compliance teams who want one consolidated call.
+</Note>
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `422` | Invalid or malformed CNPJ |
+| `403` | Missing API key, or `compliance_br` module not in plan |
+| `429` | Rate limit exceeded |
+
+<Warning>
+  A `low` risk level means no records were found in the registries we check at the time of the request. It is **not** a regulatory clearance. Your compliance program should define the frequency and scope of these checks as part of a broader due diligence process.
+</Warning>
+
+<Card title="Request access" icon="key" href="https://enrichlatam.com/compliance-br/">
+  See the full product page and request an API key.
+</Card>

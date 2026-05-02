@@ -34,7 +34,8 @@
               "modules/debarment",
               "modules/owners",
               "modules/labor",
-              "modules/tax_health"
+              "modules/tax_health",
+              "modules/compliance-br"
             ]
           },
           {
